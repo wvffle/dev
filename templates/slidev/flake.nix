@@ -1,11 +1,7 @@
 {
-  description = "slides";
-
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    flake-utils.url = "github:numtide/flake-utils";
-
     devenv.url = "github:cachix/devenv";
     devenv.inputs.nixpkgs.follows = "nixpkgs";
   };
