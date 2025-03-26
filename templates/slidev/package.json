@@ -1,0 +1,23 @@
+{
+  "name": "slides",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "slidev build",
+    "dev": "slidev --open",
+    "export": "slidev export --executable-path $PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"
+  },
+  "dependencies": {
+    "@slidev/cli": "^51.4.0",
+    "@slidev/client": "^51.4.0",
+    "@slidev/theme-default": "latest",
+    "@slidev/theme-seriph": "latest",
+    "@slidev/types": "^51.4.0",
+    "vue": "^3.4.38"
+  },
+  "devDependencies": {
+    "@vue/tsconfig": "^0.7.0",
+    "typescript": "^5.8.2",
+    "vue-router": "^4.5.0"
+  }
+}

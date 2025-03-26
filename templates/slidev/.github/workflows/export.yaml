@@ -1,0 +1,53 @@
+name: Export
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - master
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Install dependencies
+        run: corepack enable && pnpm install
+
+      - name: Install playwright browsers
+        run: pnpm dlx playwright install chromium --with-deps
+
+      - name: Export
+        run: |
+          pnpm slidev export --format pdf
+          pnpm slidev export --format pptx
+
+      - name: Rename exported files
+        run: |
+          mv slides-export.pdf ${{ github.event.repository.name }}.pdf
+          mv slides-export.pptx ${{ github.event.repository.name }}.pptx
+
+      - name: Create Tag
+        uses: rickstaa/action-create-tag@v1.7.2
+        with:
+          tag: export-${{ github.sha }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Presentation download (${{ github.sha }})
+          body: '### Please download PDF and PPTX files from the assets section below.'
+          tag_name: export-${{ github.sha }}
+          make_latest: true
+          files: |
+            ./${{ github.event.repository.name }}.pdf
+            ./${{ github.event.repository.name }}.pptx
