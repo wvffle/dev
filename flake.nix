@@ -43,7 +43,9 @@
               !(
                 basename == "flake.lock"
                 || basename == "devenv.lock"
+                || basename == "devenv.yaml"
                 || basename == "node_modules"
+                || basename == ".envrc"
                 || basename == ".forgejo"
                 || prev.lib.hasSuffix ".nix" basename
               );
