@@ -1,21 +1,10 @@
 {
-  src,
-  lockFile,
-  tauriConf,
-  tauriRoot ? "src-tauri",
-  target ? "linux",
-  nsisTauriUtils ? {
-    version = "0.5.2";
-    hash = "sha256-8+mw1Dtm+msF0vpN5FR1F6PsC8CxTePDSdgXRlu/erQ=";
-  },
-
   lib,
 
   fullCleanSource,
+  mkTauriFrontend,
 
   rustPlatform,
-
-  frontend,
 
   cargo-tauri,
   pkg-config,
@@ -33,6 +22,27 @@
   cmake,
   fetchurl,
   ...
+}:
+{
+  src,
+  tauriRoot ? "src-tauri",
+  tauriConf ? builtins.fromJSON (builtins.readFile "${src}/${tauriRoot}/tauri.conf.json"),
+
+  lockFile ?
+    if builtins.pathExists "${src}/Cargo.lock" then
+      "${src}/Cargo.lock"
+    else
+      "${src}/${tauriRoot}/Cargo.lock",
+
+  frontend ? mkTauriFrontend {
+    inherit src tauriRoot;
+  },
+
+  target ? "linux",
+  nsisTauriUtils ? {
+    version = "0.5.2";
+    hash = "sha256-8+mw1Dtm+msF0vpN5FR1F6PsC8CxTePDSdgXRlu/erQ=";
+  },
 }:
 let
   isWindows = target == "windows";

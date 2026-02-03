@@ -22,14 +22,11 @@
 
       overlays.default = final: prev: {
         fullCleanSource = import ./packages/fullCleanSource.nix { inherit (prev) lib; };
-        mkTauriApp = prev.callPackage import ./packages/mkTauriApp.nix;
-        mkTauriFrontend = prev.callPackage import ./packages/mkTauriFrontend.nix;
-        mkPnpmPackage = prev.callPackage (
-          import ./packages/mkPnpmPackage.nix {
-            inherit (final) fullCleanSource stdenv;
-            inherit pnpm2nix;
-          }
-        );
+        mkTauriFrontend = prev.callPackage ./packages/mkTauriFrontend.nix { };
+        mkTauriApp = prev.callPackage ./packages/mkTauriApp.nix { };
+        mkPnpmPackage = prev.callPackage ./packages/mkPnpmPackage.nix {
+          inherit pnpm2nix;
+        };
       };
 
       devShells = forAllSystems (
