@@ -22,6 +22,8 @@
 
       overlays.default = final: prev: {
         mkTauriPackage = import prev.callPackage ./packages/mkTauriPackage.nix;
+        mkTauriFrontend = import prev.callPackage ./packages/mkTauriFrontend.nix;
+
         mkPnpmPackage =
           { src, ... }@args:
           pnpm2nix.packages.${final.stdenv.hostPlatform.system}.mkPnpmPackage args
