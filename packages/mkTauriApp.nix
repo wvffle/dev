@@ -1,19 +1,19 @@
 {
+  src,
+  lockFile,
+  tauriConf,
+  tauriRoot ? "src-tauri",
+  target ? "linux",
   nsisTauriUtils ? {
     version = "0.5.2";
     hash = "sha256-8+mw1Dtm+msF0vpN5FR1F6PsC8CxTePDSdgXRlu/erQ=";
   },
-
-  lockFile,
 
   lib,
 
   fullCleanSource,
 
   rustPlatform,
-  tauriConf,
-  tauriRoot ? "src-tauri",
-  src,
 
   frontend,
 
@@ -25,6 +25,7 @@
   glib-networking,
   webkitgtk_4_1,
 
+  pkgsCross,
   cargo-xwin,
   nsis,
   ninja,
@@ -34,14 +35,15 @@
   ...
 }:
 let
-  isWindows = rustPlatform.cargoBuildHook.stdenv.targetPlatform.system == "x86_64-windows";
+  isWindows = target == "windows";
+  rustPlatform' = if isWindows then pkgsCross.mingwW64.rustPlatform else rustPlatform;
 in
-rustPlatform.buildRustPackage {
-  pname = "${tauriConf.productName}-${if isWindows then "windows" else "linux"}";
+rustPlatform'.buildRustPackage {
+  pname = "${tauriConf.productName}-${target}";
   version = tauriConf.version;
   src = fullCleanSource src;
 
-  cargoDeps = rustPlatform.importCargoLock {
+  cargoDeps = rustPlatform'.importCargoLock {
     inherit lockFile;
   };
 
@@ -71,7 +73,7 @@ rustPlatform.buildRustPackage {
   # Ignore aws-lc-sys gcc error:
   #   In function 'OPENSSL_memcpy',
   #   error: 'memcpy' specified bound between 18446744071562067968 and 18446744073709551615 exceeds maximum object size 9223372036854775807 [-Werror=stringop-overflow=]
-  NIX_CFLAGS_COMPILE = "-Wno-error=stringop-overflow";
+  NIX_CFLAGS_COMPILE = lib.optionalString isWindows "-Wno-error=stringop-overflow";
 
   postPatch = # bash
     ''
@@ -91,7 +93,7 @@ rustPlatform.buildRustPackage {
 
   buildPhase =
     let
-      inherit (rustPlatform.cargoBuildHook) setEnv;
+      inherit (rustPlatform'.cargoBuildHook) setEnv;
       nsis-tauri-utils-dll = fetchurl {
         url = "https://github.com/tauri-apps/nsis-tauri-utils/releases/download/nsis_tauri_utils-v${nsisTauriUtils.version}/nsis_tauri_utils.dll";
         inherit (nsisTauriUtils) hash;

@@ -21,7 +21,7 @@
       };
 
       overlays.default = final: prev: {
-        mkTauriPackage = import prev.callPackage ./packages/mkTauriPackage.nix;
+        mkTauriApp = import prev.callPackage ./packages/mkTauriApp.nix;
         mkTauriFrontend = import prev.callPackage ./packages/mkTauriFrontend.nix;
 
         mkPnpmPackage =
