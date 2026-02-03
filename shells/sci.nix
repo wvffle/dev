@@ -1,4 +1,4 @@
-{pkgs, ...}:
+{ pkgs, ... }:
 pkgs.mkShell {
   packages = with pkgs.python3Packages; [
     pkgs.python3
