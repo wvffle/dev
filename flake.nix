@@ -21,35 +21,15 @@
       };
 
       overlays.default = final: prev: {
-        mkTauriApp = import prev.callPackage ./packages/mkTauriApp.nix;
-        mkTauriFrontend = import prev.callPackage ./packages/mkTauriFrontend.nix;
-
-        mkPnpmPackage =
-          { src, ... }@args:
-          pnpm2nix.packages.${final.stdenv.hostPlatform.system}.mkPnpmPackage args
-          // {
-            src = final.fullCleanSource src;
-          };
-
-        fullCleanSource =
-          src:
-          prev.lib.cleanSourceWith {
-            src = prev.lib.cleanSource src;
-            filter =
-              name: type:
-              let
-                basename = baseNameOf (toString name);
-              in
-              !(
-                basename == "flake.lock"
-                || basename == "devenv.lock"
-                || basename == "devenv.yaml"
-                || basename == "node_modules"
-                || basename == ".envrc"
-                || basename == ".forgejo"
-                || prev.lib.hasSuffix ".nix" basename
-              );
-          };
+        fullCleanSource = import ./packages/fullCleanSource.nix { inherit (prev) lib; };
+        mkTauriApp = prev.callPackage import ./packages/mkTauriApp.nix;
+        mkTauriFrontend = prev.callPackage import ./packages/mkTauriFrontend.nix;
+        mkPnpmPackage = prev.callPackage (
+          import ./packages/mkPnpmPackage.nix {
+            inherit (final) fullCleanSource stdenv;
+            inherit pnpm2nix;
+          }
+        );
       };
 
       devShells = forAllSystems (
