@@ -14,6 +14,8 @@ lib.cleanSourceWith {
       || basename == "node_modules"
       || basename == ".envrc"
       || basename == ".forgejo"
-      || lib.hasSuffix ".nix" basename
+      || basename == ".direnv"
+      || basename == ".devenv"
+      || lib.hasSuffix ".nix" (toString name)
     );
 }

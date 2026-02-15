@@ -10,6 +10,8 @@
 mkPnpmPackage {
   pname = "${tauriConf.productName}-frontend";
   version = tauriConf.version;
+
+  # NOTE: Source is already cleaned fully in `mkPnpmPackage.nix`.
   inherit src;
 
   scriptFull = tauriConf.build.beforeBuildCommand;
