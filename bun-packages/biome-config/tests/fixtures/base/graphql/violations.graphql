@@ -1,0 +1,6 @@
+query Foo {
+  a
+}
+query Foo {
+  b
+}

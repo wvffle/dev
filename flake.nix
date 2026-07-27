@@ -5,42 +5,41 @@
     pnpm2nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs =
-    { nixpkgs, pnpm2nix, ... }:
-    let
-      forAllSystems = with nixpkgs.lib; (genAttrs systems.flakeExposed);
-    in
-    {
-      templates = rec {
-        slidev = {
-          path = ./templates/slidev;
-          description = "A slidev presentation";
-        };
-
-        slides = slidev;
+  outputs = {
+    nixpkgs,
+    pnpm2nix,
+    ...
+  }: let
+    forAllSystems = with nixpkgs.lib; (genAttrs systems.flakeExposed);
+  in {
+    templates = rec {
+      slidev = {
+        path = ./nix/templates/slidev;
+        description = "A slidev presentation";
       };
 
-      overlays.default = final: prev: {
-        fullCleanSource = import ./packages/fullCleanSource.nix { inherit (prev) lib; };
-        mkTauriFrontend = prev.callPackage ./packages/mkTauriFrontend.nix { };
-        mkTauriApp = prev.callPackage ./packages/mkTauriApp.nix { };
-        mkPnpmPackage = prev.callPackage ./packages/mkPnpmPackage.nix {
-          inherit pnpm2nix;
-        };
-      };
-
-      devShells = forAllSystems (
-        system:
-        let
-          pkgs = import nixpkgs { inherit system; };
-        in
-        rec {
-          sci = import ./shells/sci.nix { inherit pkgs; };
-          science = sci;
-          jupyter = sci;
-          python = sci;
-          py = sci;
-        }
-      );
+      slides = slidev;
     };
+
+    overlays.default = final: prev: {
+      fullCleanSource = import ./nix/packages/fullCleanSource.nix {inherit (prev) lib;};
+      mkTauriFrontend = prev.callPackage ./nix/packages/mkTauriFrontend.nix {};
+      mkTauriApp = prev.callPackage ./nix/packages/mkTauriApp.nix {};
+      mkPnpmPackage = prev.callPackage ./nix/packages/mkPnpmPackage.nix {
+        inherit pnpm2nix;
+      };
+    };
+
+    devShells = forAllSystems (
+      system: let
+        pkgs = import nixpkgs {inherit system;};
+      in rec {
+        sci = import ./nix/shells/sci.nix {inherit pkgs;};
+        science = sci;
+        jupyter = sci;
+        python = sci;
+        py = sci;
+      }
+    );
+  };
 }

@@ -1,0 +1,1346 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  "linter": {
+    "rules": {
+      "style": {
+        // Strict styling policy.
+        "recommended": false,
+        //
+        // Force ES6 imports.
+        // See: https://next.biomejs.dev/linter/rules/no-common-js/
+        //
+        // ╭╴Invalid:
+        // │ require('node:fs')
+        // ├╴
+        // │ module.exports = { a: ‘b’ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ import fs from 'node:fs'
+        // ├╴
+        // │ import('node:fs')
+        // ├╴
+        // │ export const a = 'b'
+        // ├╴
+        // │ export default { a: 'b' }
+        // ╰╴
+        "noCommonJs": "error",
+        //
+        // Disallow default exports.
+        // See: https://next.biomejs.dev/linter/rules/no-default-export/
+        //
+        // Default exports cannot be easily discovered inside an editor: They cannot be suggested by the editor when the user tries to import a name.
+        //
+        // ╭╴Invalid:
+        // │ export function f() {}
+        // ├╴
+        // │ export default {
+        // │   value: 8
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ export function f() {}
+        // ├╴
+        // │ export const value = 8
+        // ╰╴
+        "noDefaultExport": "error",
+        //
+        // Disallow a lower specificity selector from coming after a higher specificity selector.
+        // See: https://next.biomejs.dev/linter/rules/no-descending-specificity/
+        //
+        // ╭╴Invalid:
+        // │ li a { color: #00aaff; }
+        // │ a { color: #ffaa00; }
+        // ╰╴
+        // ╭╴Valid:
+        // │ a { color: #ffaa00; }
+        // │ li a { color: #00aaff; }
+        // ╰╴
+        "noDescendingSpecificity": "error",
+        //
+        // Disallow using a callback in asynchronous tests and hooks.
+        // See: https://next.biomejs.dev/linter/rules/no-done-callback/
+        //
+        // ╭╴Invalid:
+        // │ beforeEach((done) => { ... })
+        // ├╴
+        // │ test('test-name', (done) => { ... })
+        // ╰╴
+        // ╭╴Valid:
+        // │ beforeEach(async () => { ... })
+        // ├╴
+        // │ test('test-name', async () => { ... })
+        // ╰╴
+        "noDoneCallback": "error",
+        //
+        // Disallow exporting an imported variable.
+        // See: https://next.biomejs.dev/linter/rules/no-exported-imports/
+        //
+        // ╭╴Invalid:
+        // │ import { A } from "mod"
+        // │ export { A }
+        // ╰╴
+        // ╭╴Valid:
+        // │ export { A } from "mod"
+        // ╰╴
+        "noExportedImports": "error",
+        //
+        // Disallow type annotations for variables, parameters, and class properties initialized with a literal expression.
+        // See: https://next.biomejs.dev/linter/rules/no-inferrable-types/
+        //
+        // ╭╴Invalid:
+        // │ const value: 8 = 8
+        // ├╴
+        // │ let value: number = 8
+        // ├╴
+        // │ function f(param: number = 8) {}
+        // ╰╴
+        // ╭╴Valid:
+        // │ const value: number = 8
+        // ├╴
+        // │ let value: 8 | 42 = 8
+        // ├╴
+        // │ function f(param: 8 | 42 = 8) {}
+        // ╰╴
+        "noInferrableTypes": "error",
+        //
+        // Disallow usage of “magic numbers” — numbers used directly instead of being assigned to named constants.
+        // See: https://next.biomejs.dev/linter/rules/no-magic-numbers/
+        //
+        // ╭╴Invalid:
+        // │ const total = price * 1.23
+        // ╰╴
+        // ╭╴Valid:
+        // │ const TAX_RATE = 1.23
+        // │ const total = price * TAX_RATE
+        // ╰╴
+        "noMagicNumbers": "error",
+        //
+        // Disallow the use of TypeScript’s namespaces.
+        // See: https://next.biomejs.dev/linter/rules/no-namespace/
+        //
+        // Namespaces are an old way to organize your code in TypeScript. They are not recommended anymore and should be replaced by ES6 modules (the import/export syntax).
+        //
+        // ╭╴Invalid:
+        // │ module foo {}
+        // ├╴
+        // │ declare module foo {}
+        // ├╴
+        // │ namespace foo {}
+        // ├╴
+        // │ declare namespace foo {}
+        // ╰╴
+        // ╭╴Valid:
+        // │ import foo from 'foo'
+        // │ export { bar }
+        // ├╴
+        // │ declare global {}
+        // ├╴
+        // │ declare module 'foo' {}
+        // ╰╴
+        "noNamespace": "error",
+        //
+        // Disallow negation in the condition of an `if` statement if it has an `else` clause.
+        // See: https://next.biomejs.dev/linter/rules/no-negation-else/
+        //
+        // ╭╴Invalid:
+        // │ if (!cond) {
+        // │   a()
+        // │ } else {
+        // │   b()
+        // │ }
+        // ├╴
+        // │ const value = !cond ? 1 : 2
+        // ╰╴
+        // ╭╴Valid:
+        // │ if (cond) {
+        // │   b()
+        // │ } else {
+        // │   a()
+        // │ }
+        // ├╴
+        // │ const value = cond ? 2 : 1
+        // ╰╴
+        "noNegationElse": "error",
+        //
+        // Disallow non-null assertions using the `!` postfix operator.
+        // See: https://next.biomejs.dev/linter/rules/no-non-null-assertion
+        //
+        // ╭╴Invalid:
+        // │ interface Example {
+        // │   property?: string
+        // │ }
+        // │
+        // │ declare const foo: Example
+        // │ const hasBar = foo.property!.includes('bar')
+        // ╰╴
+        // ╭╴Valid:
+        // │ interface Example {
+        // │   property?: string
+        // │ }
+        // │
+        // │ declare const foo: Example
+        // │ const hasBar = foo.property?.includes('bar') ?? false
+        // ╰╴
+        "noNonNullAssertion": "error",
+        //
+        // Disallow reassigning function parameters.
+        // See: https://next.biomejs.dev/linter/rules/no-parameter-assign
+        //
+        // ╭╴Invalid:
+        // │ function f(param) {
+        // │   param = 8
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ function f(param) {
+        // │   const localParam = 8
+        // │ }
+        // ╰╴
+        "noParameterAssign": "error",
+        //
+        // Disallow the use of `process.env`.
+        // See: https://next.biomejs.dev/linter/rules/no-process-env/
+        //
+        // ╭╴Invalid:
+        // │ const isDevelop = process.env.NODE_ENV === 'development'
+        // ╰╴
+        // ╭╴Valid:
+        // │ import { getConfig } from './config'
+        // │ const isDevelop = getConfig().nodeEnv === 'development'
+        // ╰╴
+        "noProcessEnv": "error",
+        //
+        // Disallow usage of specific global variables.
+        // See: https://next.biomejs.dev/linter/rules/no-restricted-globals
+        //
+        "noRestrictedGlobals": {
+          "level": "error",
+          "options": {
+            "deniedGlobals": {
+              "$": "Using jQuery is not allowed. Use native DOM manipulation instead.",
+              "_": "Using lodash and underscore are not allowed. Use native functions instead."
+            }
+          }
+        },
+        //
+        // Disallow usage of specific imports
+        // See: https://next.biomejs.dev/linter/rules/no-restricted-imports
+        //
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "jquery": "Using jQuery are not allowed. Use native DOM manipulation instead.",
+              "lodash": "Using lodash are not allowed. Use native functions instead.",
+              "underscore": "Using underscore are not allowed. Use native functions instead.",
+              "vuex": "Using vuex are not allowed. Use pinia instead.",
+              "yup": "Using yup are not allowed. Use zod instead."
+            }
+          }
+        },
+        //
+        // Disallow the use of constants which its value is the upper-case version of its name.
+        // See: https://next.biomejs.dev/linter/rules/no-shouty-constants
+        //
+        // ╭╴Invalid:
+        // │ const FOO = "FOO"
+        // │ console.log(FOO)
+        // ╰╴
+        // ╭╴Valid:
+        // │ console.log("FOO")
+        // ├╴
+        // │ export const FOO = "FOO"
+        // │ console.log(FOO)
+        // ╰╴
+        "noShoutyConstants": "error",
+        //
+        // Enforce the use of `String.slice()` over `String.substr()` and `String.substring()`.
+        // See: https://next.biomejs.dev/linter/rules/no-substr
+        //
+        //
+        // ╭╴Invalid:
+        // │ foo.substr(beginIndex, length)
+        // ├╴
+        // │ foo.substring(beginIndex, endIndex)
+        // ╰╴
+        // ╭╴Valid:
+        // │ foo.slice(beginIndex, endIndex)
+        // ╰╴
+        "noSubstr": "error",
+        //
+        // Disallow template literals if interpolation and special-character handling are not needed
+        // See: https://next.biomejs.dev/linter/rules/no-unused-template-literal/
+        //
+        // ╭╴Invalid:
+        // │ const foo = `bar`
+        // ╰╴
+        // ╭╴Valid:
+        // │ const foo = `bar
+        // │ with newline`
+        // ├╴
+        // │ const foo = `"bar"`
+        // ├╴
+        // │ const foo = `'bar'`
+        // ├╴
+        // │ const foo = `${bar} baz`
+        // ╰╴
+        "noUnusedTemplateLiteral": "error",
+        //
+        // Disallow `else` block when the `if` block breaks early.
+        // See: https://next.biomejs.dev/linter/rules/no-useless-else/
+        //
+        // ╭╴Invalid:
+        // │ function f(x: number) {
+        // │   if (x < 0) {
+        // │     return 0
+        // │   } else {
+        // │     return x
+        // │   }
+        // │ }
+        // ├╴
+        // │ function f(x: number) {
+        // │   if (x < 0) {
+        // │     throw new RangeError()
+        // │   } else {
+        // │     return x
+        // │   }
+        // │ }
+        // ├╴
+        // │ while (x > 0) {
+        // │   if (f(x)) {
+        // │     break
+        // │   } else {
+        // │     x--
+        // │   }
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ function f(x: number) {
+        // │   if (x < 0) {
+        // │     return 0
+        // │   }
+        // │
+        // │   return x
+        // │ }
+        // ├╴
+        // │ function f(x: number) {
+        // │   if (x < 0) {
+        // │     throw new RangeError()
+        // │   }
+        // │
+        // │   return x
+        // │ }
+        // ├╴
+        // │ while (x > 0) {
+        // │   if (f(x)) {
+        // │     break
+        // │   }
+        // │
+        // │   x--
+        // │ }
+        // ╰╴
+        "noUselessElse": "error",
+        //
+        // Disallow use of @value rule in CSS modules.
+        // See: https://next.biomejs.dev/linter/rules/no-value-at-rule/
+        //
+        // ╭╴Invalid:
+        // │ @value color: #00aaff
+        // ╰╴
+        // ╭╴Valid:
+        // │ :root {
+        // │   --color: #00aaff;
+        // │ }
+        // ╰╴
+        "noValueAtRule": "error",
+        //
+        // Disallow the use of yoda expressions.
+        // See: https://next.biomejs.dev/linter/rules/no-yoda-expression/
+        //
+        // ╭╴Invalid:
+        // │ const isRed = "red" === value
+        // ╰╴
+        // ╭╴Valid:
+        // │ const isRed = value === "red"
+        // ╰╴
+        "noYodaExpression": "error",
+        //
+        // Disallow Array constructors.
+        // See: https://next.biomejs.dev/linter/rules/use-array-literals/
+        //
+        // ╭╴Invalid:
+        // │ const array = new Array()
+        // ╰╴
+        // ╭╴Valid:
+        // │ const array = []
+        // ╰╴
+        "useArrayLiterals": "error",
+        //
+        // Enforce the use of `as const` over literal type and type annotation.
+        // See: https://next.biomejs.dev/linter/rules/use-as-const-assertion/
+        //
+        // ╭╴Invalid:
+        // │ const foo: 8 = 8
+        // ╰╴
+        // ╭╴Valid:
+        // │ const foo = 8 as const
+        // ╰╴
+        "useAsConstAssertion": "error",
+        //
+        // Enforce the use of `.at()` instead of negative integer index access.
+        // See: https://next.biomejs.dev/linter/rules/use-at-index/
+        //
+        // ╭╴Invalid:
+        // │ const foo = array[array.length - 1]
+        // ╰╴
+        // ╭╴Valid:
+        // │ const foo = array.at(-1)
+        // ├╴
+        // │ const foo = array[8]
+        // ├╴
+        // │ array[array.length - 1] = 8
+        // ╰╴
+        "useAtIndex": "error",
+        //
+        // Enforce using `else if` instead of nested `if` in `else` clauses.
+        // See: next.biomejs.dev/linter/rules/use-collapsed-else-if/
+        //
+        // ╭╴Invalid:
+        // │ if (condition) {
+        // │   // ...
+        // │ } else {
+        // │   if (anotherCondition) {
+        // │     // ...
+        // │   }
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ if (condition) {
+        // │   // ...
+        // │ } else if (anotherCondition) {
+        // │   // ...
+        // │ }
+        // ├╴
+        // │ if (condition) {
+        // │   // ...
+        // │ } else {
+        // │   if (anotherCondition) {
+        // │     // ...
+        // │   }
+        // │   doSomething()
+        // │ }
+        // ╰╴
+        "useCollapsedElseIf": "error",
+        //
+        // Enforce using single `if` instead of nested `if` clauses.
+        // See: https://next.biomejs.dev/linter/rules/use-collapsed-if/
+        //
+        // ╭╴Invalid:
+        // │ if (condition) {
+        // │   if (anotherCondition) {
+        // │     // ...
+        // │   }
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ if (condition && anotherCondition) {
+        // │   // ...
+        // │ }
+        // ├╴
+        // │ if (condition) {
+        // │   if (anotherCondition) {
+        // │     // ...
+        // │   }
+        // │   doSomething()
+        // │ }
+        // ├╴
+        // │ if (condition) {
+        // │   if (anotherCondition) {
+        // │     // ...
+        // │   } else {
+        // │     // ...
+        // │   }
+        // │ }
+        // ╰╴
+        "useCollapsedIf": "error",
+        //
+        // Enforce the use of `T[]` instead of `Array<T>`.
+        // See: https://next.biomejs.dev/linter/rules/use-consistent-array-type/
+        //
+        // ╭╴Invalid:
+        // │ let foo: Array<Foo>
+        // ├╴
+        // │ const foo: ReadonlyArray<Foo> = ['foo', 'bar']
+        // ╰╴
+        // ╭╴Valid:
+        // │ let foo: Foo[]
+        // ├╴
+        // │ const foo: readonly Foo[] = ['foo', 'bar']
+        // ╰╴
+        "useConsistentArrayType": {
+          "level": "error",
+          "options": {
+            "syntax": "shorthand"
+          }
+        },
+        //
+        // Enforce the use of new for all builtins, except `String`, `Number` and `Boolean`.
+        // See: https://next.biomejs.dev/linter/rules/use-consistent-builtin-instantiation/
+        //
+        // ╭╴Invalid:
+        // │ const now = Date()
+        // ├╴
+        // │ const foo = new String(10)
+        // ╰╴
+        // ╭╴Valid:
+        // │ const now = new Date()
+        // ├╴
+        // │ const foo = String(10)
+        // ╰╴
+        "useConsistentBuiltinInstantiation": "error",
+        //
+        // Require consistent accessibility modifiers on class properties and methods.
+        // See: https://next.biomejs.dev/linter/rules/use-consistent-member-accessibility/
+        //
+        // ╭╴Invalid:
+        // │ class AppError extends Error {
+        // │   override name = 'AppError'
+        // │
+        // │   constructor (message: string, customData?: unknown) {
+        // │     this._data = customData
+        // │     super(message)
+        // │   }
+        // │
+        // │   get data() {
+        // │     return this._data
+        // │   }
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ class AppError extends Error {
+        // │   public override name = 'AppError'
+        // │
+        // │   public constructor (message: string, private readonly customData?: unknown) {
+        // │     super(message)
+        // │   }
+        // │
+        // │   public get data() {
+        // │     return this.customData
+        // │   }
+        // │ }
+        // ╰╴
+        "useConsistentMemberAccessibility": {
+          "level": "error",
+          "options": {
+            "accessibility": "explicit"
+          }
+        },
+        //
+        // Enforce consistent declaration of object literals.
+        // See: https://next.biomejs.dev/linter/rules/use-consistent-object-definitions/
+        //
+        // ╭╴Invalid:
+        // │ const foo = 8
+        // │ const bar = {
+        // │   foo: foo,
+        // │   function baz () {
+        // │     return 42
+        // │   }
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ const foo = 8
+        // │ const bar = {
+        // │   foo,
+        // │   baz () {
+        // │     return 42
+        // │   }
+        // │ }
+        // ╰╴
+        "useConsistentObjectDefinitions": {
+          "level": "error",
+          "options": {
+            "syntax": "shorthand"
+          }
+        },
+        //
+        // Enforce type definitions to consistently use either `interface` rather than `type`.
+        // See: https://next.biomejs.dev/linter/rules/use-consistent-type-definitions/
+        //
+        // ╭╴Invalid:
+        // │ type Point = { x: number; y: number; }
+        // ╰╴
+        // ╭╴Valid:
+        // │ interface Point { x: number; y: number; }
+        // ╰╴
+        "useConsistentTypeDefinitions": {
+          "level": "error",
+          "options": {
+            "style": "interface"
+          }
+        },
+        //
+        // Require `const` declarations for variables that are only assigned once.
+        // See: https://next.biomejs.dev/linter/rules/use-const/
+        //
+        // ╭╴Invalid:
+        // │ function f() {
+        // │   let foo = 8
+        // │   return foo * 2
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ function f() {
+        // │   const foo = 8
+        // │   return foo * 2
+        // │ }
+        // ╰╴
+        "useConst": "error",
+        //
+        // Enforce default function parameters and optional function parameters to be last.
+        // See: https://next.biomejs.dev/linter/rules/use-default-parameter-last/
+        //
+        // ╭╴Invalid:
+        // │ function f(a = 0, x) {
+        // │   ...
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ function f(x, a = 0) {
+        // │   ...
+        // │ }
+        // ╰╴
+        "useDefaultParameterLast": "error",
+        //
+        // Require the default clause in switch statements.
+        // See: https://next.biomejs.dev/linter/rules/use-default-switch-clause/
+        //
+        // ╭╴Invalid:
+        // │ switch (x) {
+        // │   case 8: console.log('it is eight!'); break
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ switch (x) {
+        // │   case 8: console.log('it is eight!'); break
+        // │   default: console.log('not eight'); break
+        // │ }
+        // ╰╴
+        "useDefaultSwitchClause": "error",
+        //
+        // Require specifying the reason argument when using `@deprecated` directive.
+        // See: https://next.biomejs.dev/linter/rules/use-deprecated-reason/
+        //
+        // ╭╴Invalid:
+        // │ query  {
+        // │   member @deprecated
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ query  {
+        // │   member @deprecated(reason: "Use `user` instead.")
+        // │ }
+        // ╰╴
+        "useDeprecatedReason": "error",
+        //
+        // Enforce explicitly comparing the length, size, byteLength or byteOffset property of a value.
+        // See: https://next.biomejs.dev/linter/rules/use-explicit-length-check/
+        //
+        // ╭╴Invalid:
+        // │ if (!array.length)  {
+        // │   ...
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ if (array.length === 0)  {
+        // │   ...
+        // │ }
+        // ╰╴
+        "useExplicitLengthCheck": "error",
+        //
+        // Disallow the use of Math.pow in favor of the ** operator.
+        // See: https://next.biomejs.dev/linter/rules/use-exponentiation-operator/
+        //
+        // ╭╴Invalid:
+        // │ const foo = Math.pow(8, 2)
+        // ╰╴
+        // ╭╴Valid:
+        // │ const foo = 8 ** 2
+        // ╰╴
+        "useExponentiationOperator": "error",
+        //
+        // Enforce the use of export type for types.
+        // See: https://next.biomejs.dev/linter/rules/use-export-type/
+        //
+        // ╭╴Invalid:
+        // │ type Num = 8 | 12
+        // │ export { Num }
+        // ├╴
+        // │ type Num = 8 | 12
+        // │ export { type Num }
+        // ╰╴
+        // ╭╴Valid:
+        // │ type Num = 8 | 12
+        // │ export type { Num }
+        // ╰╴
+        "useExportType": "error",
+        //
+        // Enforce all exports are declared after all non-export statements.
+        // See: https://next.biomejs.dev/linter/rules/use-exports-last/
+        //
+        // ╭╴Invalid:
+        // │ export const foo = 8
+        // │ const bar = 42
+        // ╰╴
+        // ╭╴Valid:
+        // │ const bar = 42
+        // │ export const foo = 8
+        // ╰╴
+        "useExportsLast": "error",
+        //
+        // Enforce naming conventions for JavaScript and TypeScript filenames.
+        // See: https://next.biomejs.dev/linter/rules/use-filenaming-convention/
+        //
+        "useFilenamingConvention": "error",
+        //
+        // Prefer using for...of loops over standard for loops where possible.
+        // See: https://next.biomejs.dev/linter/rules/use-for-of/
+        //
+        // ╭╴Invalid:
+        // │ for (let i = 0; i < array.length; i++) {
+        // │   const element = array[i]
+        // │   ...
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ for (const element of array) {
+        // │   ...
+        // │ }
+        // ├╴
+        // │ for (let i = 0; i < array.length; i++) {
+        // │   // `i` is used directly, so everything is valid
+        // │   console.log(i)
+        // │ }
+        // ╰╴
+        "useForOf": "error",
+        //
+        // This rule enforces the use of `<>...</>` over `<Fragment>...</Fragment>`.
+        // See: https://next.biomejs.dev/linter/rules/use-fragment-syntax/
+        //
+        // ╭╴Invalid:
+        // │ <Fragment>child</Fragment>
+        // ├╴
+        // │ <React.Fragment>child</React.Fragment>
+        // ╰╴
+        // ╭╴Valid:
+        // │ <>child</>
+        // ╰╴
+        "useFragmentSyntax": "error",
+        //
+        // Validates that all enum values are capitalized.
+        // See: https://next.biomejs.dev/linter/rules/use-graphql-naming-convention/
+        //
+        // ╭╴Invalid:
+        // │ enum MyEnum {
+        // │   value
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ enum MyEnum {
+        // │   VALUE
+        // │ }
+        // ╰╴
+        "useGraphqlNamingConvention": "error",
+        //
+        // Enforce that getters and setters for the same property are adjacent in class and object definitions.
+        // See: https://next.biomejs.dev/linter/rules/use-grouped-accessor-pairs/
+        //
+        // ╭╴Invalid:
+        // │ class User {
+        // │   get name() { return this.name }
+        // │   constructor (private name) {}
+        // │   set name(value) { this.name = name }
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ class User {
+        // │   constructor (private name) {}
+        // │   get name() { return this.name }
+        // │   set name(value) { this.name = name }
+        // │ }
+        // ╰╴
+        "useGroupedAccessorPairs": "error",
+        //
+        // Enforce the use of `import type` for types.
+        // See: https://next.biomejs.dev/linter/rules/use-import-type/
+        //
+        // ╭╴Invalid:
+        // │ import { type A } from 'mod'
+        // ├╴
+        // │ import { A } from 'mod'
+        // │ let a: A = 8
+        // ╰╴
+        // ╭╴Valid:
+        // │ import type { A } from 'mod'
+        // ├╴
+        // │ import type { A } from 'mod'
+        // │ let a: A = 8
+        // ╰╴
+        "useImportType": {
+          "level": "error",
+          "options": {
+            "style": "separatedType"
+          }
+        },
+        //
+        // Enforce all enum members to be literal values.
+        // See: https://next.biomejs.dev/linter/rules/use-literal-enum-members/
+        //
+        // ╭╴Invalid:
+        // │ const x = 8
+        // │ enum MyEnum {
+        // │   Value = x
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ enum MyEnum {
+        // │   Value = 8
+        // │ }
+        // ╰╴
+        "useLiteralEnumMembers": "error",
+        //
+        // Enforce naming conventions for everything across a codebase.
+        // See: https://next.biomejs.dev/linter/rules/use-naming-convention/#conventions
+        //
+        "useNamingConvention": {
+          "level": "error",
+          "options": {
+            "strictCase": false
+          }
+        },
+        //
+        // Promotes the usage of node:assert/strict over node:assert.
+        // See: https://next.biomejs.dev/linter/rules/use-node-assert-strict/
+        //
+        // ╭╴Invalid:
+        // │ import * as assert from "node:assert"
+        // ╰╴
+        // ╭╴Valid:
+        // │ import * as assert from "node:assert/strict"
+        // ╰╴
+        "useNodeAssertStrict": "error",
+        //
+        // Enforces using the `node:*` protocol for Node.js builtin modules.
+        // See: https://next.biomejs.dev/linter/rules/use-nodejs-import-protocol/
+        //
+        // ╭╴Invalid:
+        // │ import * as fs from 'fs'
+        // ╰╴
+        // ╭╴Valid:
+        // │ import * as fs from 'node:fs'
+        // ╰╴
+        "useNodejsImportProtocol": "error",
+        //
+        // Use the `Number` properties instead of global ones.
+        // See: https://next.biomejs.dev/linter/rules/use-number-namespace/
+        //
+        // ╭╴Invalid:
+        // │ parseInt('8')
+        // ├╴
+        // │ parseFloat('8.42')
+        // ├╴
+        // │ NaN
+        // ├╴
+        // │ Infinity
+        // ├╴
+        // │ -Infinity
+        // ╰╴
+        // ╭╴Valid:
+        // │ Number.parseInt('8')
+        // ├╴
+        // │ Number.parseFloat('8.42')
+        // ├╴
+        // │ Number.NaN
+        // ├╴
+        // │ Number.POSITIVE_INFINITY
+        // ├╴
+        // │ Number.NEGATIVE_INFINITY
+        // ╰╴
+        "useNumberNamespace": "error",
+        //
+        // Prefer object spread over Object.assign() when constructing new objects.
+        // See: https://next.biomejs.dev/linter/rules/use-object-spread/
+        //
+        // ╭╴Invalid:
+        // │ const bar = Object.assign({ baz: 8 }, foo)
+        // ╰╴
+        // ╭╴Valid:
+        // │ const bar = { baz: 8, ...foo }
+        // ╰╴
+        "useObjectSpread": "error",
+        //
+        // Enforce that components are defined as functions and never as classes.
+        // See: https://next.biomejs.dev/linter/rules/use-react-function-components/
+        //
+        // ╭╴Invalid:
+        // │ class Foo extends React.Component {
+        // │   render() {
+        // │     return (<div>child</div>)
+        // │   }
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ function Foo () {
+        // │   return (<div>child</div>)
+        // │ }
+        // ╰╴
+        "useReactFunctionComponents": "error",
+        //
+        // Enforce marking members as readonly if they are never modified outside the constructor.
+        // See: https://next.biomejs.dev/linter/rules/use-readonly-class-properties/
+        //
+        // ╭╴Invalid:
+        // │ class Foo {
+        // │   private bar = 8
+        // │   constructor (x: number, private y: number) {
+        // │     this.bar = x * bar
+        // │   }
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ class Foo {
+        // │   private readonly bar = 8
+        // │   constructor (x: number, private readonly y: number) {
+        // │     this.bar = x * bar
+        // │   }
+        // │ }
+        // ╰╴
+        "useReadonlyClassProperties": "error",
+        //
+        // Prevent extra closing tags for components without children.
+        // See: https://next.biomejs.dev/linter/rules/use-self-closing-elements/
+        //
+        // ╭╴Invalid:
+        // │ <div></div>
+        // ╰╴
+        // ╭╴Valid:
+        // │ <div />
+        // ╰╴
+        "useSelfClosingElements": "error",
+        //
+        // Require assignment operator shorthand where possible.
+        // See: https://next.biomejs.dev/linter/rules/use-shorthand-assign/
+        //
+        // ╭╴Invalid:
+        // │ a = a + 1
+        // ╰╴
+        // ╭╴Valid:
+        // │ a += 1
+        // ╰╴
+        "useShorthandAssign": "error",
+        //
+        // Enforce using function types instead of object type with call signatures.
+        // See: https://next.biomejs.dev/linter/rules/use-shorthand-function-type/
+        //
+        // ╭╴Invalid:
+        // │ interface Foo {
+        // │  (): string
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ type Foo = () => string
+        // ╰╴
+        "useShorthandFunctionType": "error",
+        //
+        // Disallow multiple variable declarations in the same variable statement
+        // See: https://next.biomejs.dev/linter/rules/use-single-var-declarator/
+        //
+        // ╭╴Invalid:
+        // │ const foo = 8, bar = 42
+        // ╰╴
+        // ╭╴Valid:
+        // │ const foo = 8
+        // │ const bar = 42
+        // ├╴
+        // │ for (let i = 0, x = 1; i < arr.length; i++) {}
+        // ╰╴
+        "useSingleVarDeclarator": "error",
+        //
+        // Require a description parameter for the Symbol().
+        // See: https://next.biomejs.dev/linter/rules/use-symbol-description/
+        //
+        // ╭╴Invalid:
+        // │ const foo = Symbol()
+        // ├╴
+        // │ const foo = Symbol('')
+        // ╰╴
+        // ╭╴Valid:
+        // │ const foo = Symbol('A symbol for foo.')
+        // ╰╴
+        "useSymbolDescription": "error",
+        //
+        // Prefer template literals over string concatenation.
+        // See: https://next.biomejs.dev/linter/rules/use-template/
+        //
+        // ╭╴Invalid:
+        // │ const foo = "bar" + baz
+        // ╰╴
+        // ╭╴Valid:
+        // │ const foo = `bar${baz}`
+        // ╰╴
+        "useTemplate": "error",
+        //
+        // Require `new` keyword when throwing an error.
+        // See: https://next.biomejs.dev/linter/rules/use-throw-new-error/
+        //
+        // ╭╴Invalid:
+        // │ throw Error()
+        // ╰╴
+        // ╭╴Valid:
+        // │ throw new Error()
+        // ╰╴
+        "useThrowNewError": "error",
+        //
+        // Disallow throwing non-`Error` values.
+        // See: https://next.biomejs.dev/linter/rules/use-throw-only-error/
+        //
+        // ╭╴Invalid:
+        // │ throw 8
+        // ╰╴
+        // ╭╴Valid:
+        // │ throw new Error()
+        // ╰╴
+        "useThrowOnlyError": "error",
+        //
+        // Enforce the use of `String.trimStart()` and `String.trimEnd()` over `String.trimLeft()` and `String.trimRight()`.
+        // See: https://next.biomejs.dev/linter/rules/use-trim-start-end/
+        //
+        // ╭╴Invalid:
+        // │ foo.trimLeft()
+        // ├╴
+        // │ foo.trimRight()
+        // ╰╴
+        // ╭╴Valid:
+        // │ foo.trimStart()
+        // ├╴
+        // │ foo.trimEnd()
+        // ╰╴
+        "useTrimStartEnd": "error",
+        //
+        // Disallow overload signatures that can be unified into a single signature.
+        // See: https://next.biomejs.dev/linter/rules/use-unified-type-signatures/
+        //
+        "useUnifiedTypeSignatures": "error",
+        //
+        // NOTE: Rules that are deliberately turned off. For completeness' sake.
+        //
+        // Disallow TypeScript enums.
+        "noEnum": "off",
+        // Prevent usage of <head> element in a Next.js project.
+        "noHeadElement": "off",
+        // Disallow implicit true values on JSX boolean attributes.
+        // (In Vue I'd rather want implicid boolean behavior to be forced.)
+        "noImplicitBoolean": "off",
+        // Disallow nested ternary expressions.
+        "noNestedTernary": "off",
+        // Disallow the use of parameter properties in class constructors.
+        "noParameterProperties": "off",
+        // Disallow user defined types.
+        // (No types to restrict.)
+        "noRestrictedTypes": "off",
+        // Requires following curly brace conventions.
+        "useBlockStatements": "off",
+        // Enforce declaring components only within modules that export React Components exclusively.
+        "useComponentExportOnlyModules": "off",
+        // This rule enforces consistent use of curly braces inside JSX attributes and JSX children.
+        "useConsistentCurlyBraces": "off",
+        // Require that each enum member value be explicitly initialized.
+        "useEnumInitializers": "off",
+        // Enforce the use of numeric separators in numeric literals.
+        "useNumericSeparators": "off",
+        //
+        // Disallow `continue` statements.
+        // See: https://next.biomejs.dev/linter/rules/no-continue/
+        //
+        // ╭╴Invalid:
+        // │ let sum = 0,
+        // │     i;
+        // │
+        // │ for(i = 0; i < 10; i++) {
+        // │     if(i >= 5) {
+        // │         continue;
+        // │     }
+        // │
+        // │     sum += i;
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ let sum = 0,
+        // │     i;
+        // │
+        // │ for(i = 0; i < 10; i++) {
+        // │     if(i < 5) {
+        // │         sum += i;
+        // │     }
+        // │ }
+        // ╰╴
+        "noContinue": "off",
+        //
+        // Limit the number of classes declared per file.
+        // See: https://next.biomejs.dev/linter/rules/no-excessive-classes-per-file/
+        //
+        // ╭╴Invalid:
+        // │ class Foo {}
+        // │ class Bar {}
+        // ╰╴
+        // ╭╴Valid:
+        // │ class Foo {}
+        // ╰╴
+        "noExcessiveClassesPerFile": "error",
+        //
+        // Limit the number of lines per file.
+        // See: https://next.biomejs.dev/linter/rules/no-excessive-lines-per-file/
+        //
+        // ╭╴Valid:
+        // │ .a { color: red; }
+        // │ .b { color: blue; }
+        // ╰╴
+        "noExcessiveLinesPerFile": "off",
+        //
+        // Disallow hex colors in CSS.
+        // See: https://next.biomejs.dev/linter/rules/no-hex-colors/
+        //
+        // ╭╴Invalid:
+        // │ a { color: #000; }
+        // ╰╴
+        // ╭╴Valid:
+        // │ a { color: black; }
+        // ╰╴
+        "noHexColors": "warn",
+        //
+        // Disallow the unary `++` and `--` operators.
+        // See: https://next.biomejs.dev/linter/rules/no-increment-decrement/
+        //
+        // ╭╴Invalid:
+        // │ let foo = 0;
+        // │ foo++;
+        // ╰╴
+        // ╭╴Valid:
+        // │ let foo = 0;
+        // │ foo += 1;
+        // ╰╴
+        "noIncrementDecrement": {
+          "level": "error",
+          "options": {
+            "allowForLoopAfterthoughts": true
+          }
+        },
+        //
+        // Disallow chained assignment expressions (`a = b = c`).
+        // See: https://next.biomejs.dev/linter/rules/no-multi-assign/
+        //
+        // ╭╴Invalid:
+        // │ const foo = bar = "baz";
+        // ╰╴
+        // ╭╴Valid:
+        // │ const foo = "baz";
+        // │ const bar = "baz";
+        // ╰╴
+        "noMultiAssign": "error",
+        //
+        // Disallow multiline strings using backslash-newline.
+        // See: https://next.biomejs.dev/linter/rules/no-multiline-string/
+        //
+        // ╭╴Invalid:
+        // │ const foo =
+        // │     "Line 1\n\
+        // │ Line 2";
+        // ╰╴
+        // ╭╴Valid:
+        // │ const foo = "Line 1\nLine 2";
+        // ╰╴
+        "noMultilineString": "error",
+        //
+        // Disallow the specified GraphQL root operation types.
+        // See: https://next.biomejs.dev/linter/rules/no-root-type/
+        //
+        // ╭╴Valid:
+        // │ type Query {
+        // │   users: [User!]!
+        // │ }
+        // ╰╴
+        "noRootType": "off",
+        //
+        // Disallow ternary operators.
+        // See: https://next.biomejs.dev/linter/rules/no-ternary/
+        //
+        // ╭╴Invalid:
+        // │ const foo = isBar ? baz : qux;
+        // ╰╴
+        // ╭╴Valid:
+        // │ let foo;
+        // │
+        // │ if (isBar) {
+        // │ 	foo = baz;
+        // │ } else {
+        // │ 	foo = qux;
+        // │ }
+        // ╰╴
+        "noTernary": "off",
+        //
+        // Enforce concise arrow-function bodies where possible.
+        // See: https://next.biomejs.dev/linter/rules/use-consistent-arrow-return/
+        //
+        // ╭╴Invalid:
+        // │ const bar = () => {
+        // │     return {
+        // │         bar: {
+        // │             foo: 1,
+        // │             bar: 2,
+        // │         }
+        // │     };
+        // │ };
+        // ╰╴
+        // ╭╴Valid:
+        // │ const foo = () => 0;
+        // │ const bar = () => { "use strict"; return 1 }
+        // │ const baz = () => { /* intentional */ return x }
+        // │ const qux = () => ({ a: 1 })   // already concise with parens
+        // ╰╴
+        "useConsistentArrowReturn": "error",
+        //
+        // Enforce a consistent GraphQL description style.
+        // See: https://next.biomejs.dev/linter/rules/use-consistent-graphql-descriptions/
+        //
+        "useConsistentGraphqlDescriptions": "error",
+        //
+        // Enforce a consistent interface member style (method syntax).
+        // See: https://next.biomejs.dev/linter/rules/use-consistent-method-signatures/
+        //
+        // ╭╴Invalid:
+        // │ interface Example {
+        // │   methodFunc(arg: string): number;
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ interface Prop {
+        // │   propFunc: (arg: string) => number;
+        // │ }
+        // ╰╴
+        "useConsistentMethodSignatures": {
+          "level": "error",
+          "options": {
+            "style": "method"
+          }
+        },
+        //
+        // Require destructuring from arrays and objects.
+        // See: https://next.biomejs.dev/linter/rules/use-destructuring/
+        //
+        // ╭╴Invalid:
+        // │ var foo = array[0];
+        // ╰╴
+        // ╭╴Valid:
+        // │ var [foo] = array;
+        // ╰╴
+        "useDestructuring": {
+          "level": "warn",
+          "options": {
+            "assignmentExpression": {
+              "array": false,
+              "object": false
+            }
+          }
+        },
+        //
+        // Require preserving the original error via `{ cause }` when rethrowing.
+        // See: https://next.biomejs.dev/linter/rules/use-error-cause/
+        //
+        // ╭╴Invalid:
+        // │ try {
+        // │   // ...
+        // │ } catch (err) {
+        // │   throw new Error(err.message);
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ try {
+        // │   // ...
+        // │ } catch (err) {
+        // │   throw new Error("Something went wrong", { cause: err });
+        // │ }
+        // │
+        // │ try {
+        // │     throw "Not a rethrow, so it's ignored when nested";
+        // │ } catch (err) {
+        // │     const fn = () => {
+        // │         throw new Error("New unrelated error");
+        // │     }
+        // │     fn();
+        // │ }
+        // ╰╴
+        "useErrorCause": "error",
+        //
+        // Enforce `globalThis` over `window`/`self`/`global`.
+        // See: https://next.biomejs.dev/linter/rules/use-global-this/
+        //
+        // ╭╴Invalid:
+        // │ window.foo;
+        // ╰╴
+        // ╭╴Valid:
+        // │ globalThis.foo;
+        // ╰╴
+        "useGlobalThis": "error",
+        //
+        // Require GraphQL mutation input arguments to be named `input`.
+        // See: https://next.biomejs.dev/linter/rules/use-input-name/
+        //
+        // ╭╴Invalid:
+        // │ type Mutation {
+        // │   SetMessage(message: InputMessage): String
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ type Mutation {
+        // │   SetMessage(input: SetMessageInput): String
+        // │ }
+        // ╰╴
+        "useInputName": "warn",
+        //
+        // Allow only one executable definition per GraphQL document.
+        // See: https://next.biomejs.dev/linter/rules/use-lone-executable-definition/
+        //
+        // ╭╴Invalid:
+        // │ query Foo {
+        // │   id
+        // │ }
+        // │
+        // │ fragment Bar on Baz {
+        // │   id
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ query Foo {
+        // │   id
+        // │ }
+        // ╰╴
+        "useLoneExecutableDefinition": "off",
+        //
+        // Prefer the spread operator over `Function.prototype.apply`.
+        // See: https://next.biomejs.dev/linter/rules/use-spread-over-apply/
+        //
+        // ╭╴Invalid:
+        // │ foo.apply(null, args);
+        // ╰╴
+        // ╭╴Valid:
+        // │ foo(...args);
+        // │
+        // │ obj.foo(...args);
+        // │
+        // │ foo.apply(obj, [1, 2, 3]);
+        // ╰╴
+        "useSpreadOverApply": "error"
+      }
+    }
+  }
+}

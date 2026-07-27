@@ -1,0 +1,139 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  "linter": {
+    "rules": {
+      "complexity": {
+        "recommended": true,
+        //
+        // Prefer `for...of` loop instead of `Array.forEach`.
+        // See: https://next.biomejs.dev/linter/rules/no-for-each/
+        //
+        // ╭╴Invalid:
+        // │ array.forEach((item) => f(item))
+        // ╰╴
+        // ╭╴Valid:
+        // │ for (const item of array) {
+        // │   f(item)
+        // │ }
+        // ╰╴
+        "noForEach": "error",
+        //
+        // Disallow shorthand type conversions.
+        // See: https://next.biomejs.dev/linter/rules/no-implicit-coercions/
+        //
+        // ╭╴Invalid:
+        // │ !!foo
+        // ├╴
+        // │ +foo
+        // ╰╴
+        // ╭╴Valid:
+        // │ Boolean(foo)
+        // ├╴
+        // │ Number(foo)
+        // ╰╴
+        "noImplicitCoercions": "error",
+        //
+        // Discard redundant terms from logical expressions.
+        // See: https://next.biomejs.dev/linter/rules/use-simplified-logic-expression/
+        //
+        "useSimplifiedLogicExpression": "error",
+        //
+        // Disallow regular expressions that begin with an ambiguous `=`.
+        // See: https://next.biomejs.dev/linter/rules/no-div-regex/
+        //
+        // ╭╴Invalid:
+        // │ function bar() {
+        // │   return /=foo/;
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ function bar() {
+        // │   return /[=]foo/;
+        // │ }
+        // ╰╴
+        "noDivRegex": "error",
+        //
+        // Disallow a default export that re-exports an existing named symbol.
+        // See: https://next.biomejs.dev/linter/rules/no-redundant-default-export/
+        //
+        // ╭╴Invalid:
+        // │ export const foo = 42;
+        // │ export default foo;
+        // ╰╴
+        // ╭╴Valid:
+        // │ export const foo = 42;
+        // │ export default 42;
+        // ╰╴
+        "noRedundantDefaultExport": "warn",
+        //
+        // Disallow unused `catch` bindings.
+        // See: https://next.biomejs.dev/linter/rules/no-useless-catch-binding/
+        //
+        // ╭╴Invalid:
+        // │ try {
+        // │     // Do something
+        // │ } catch (unused) {}
+        // ╰╴
+        // ╭╴Valid:
+        // │ try {
+        // │     // Do something
+        // │ } catch (used) {
+        // │     console.error(used);
+        // │ }
+        // ╰╴
+        "noUselessCatchBinding": "error",
+        //
+        // Disallow redundant `return;` statements.
+        // See: https://next.biomejs.dev/linter/rules/no-useless-return/
+        //
+        // ╭╴Invalid:
+        // │ function foo() {
+        // │     return;
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ function foo() {
+        // │     return 5;
+        // │ }
+        // ╰╴
+        "noUselessReturn": "error",
+        //
+        // Disallow unnecessary uses of `undefined`.
+        // See: https://next.biomejs.dev/linter/rules/no-useless-undefined/
+        //
+        // ╭╴Invalid:
+        // │ let foo = undefined;
+        // ╰╴
+        // ╭╴Valid:
+        // │ let foo;
+        // │ const {foo} = bar;
+        // │ function foo() {
+        // │   return;
+        // │ }
+        // │ function* foo() {
+        // │   yield;
+        // │ }
+        // │ function foo(bar) {}
+        // │ function foo({bar}) {}
+        // │ foo();
+        // ╰╴
+        "noUselessUndefined": "error",
+        //
+        // Limit the number of parameters a function may declare.
+        // See: https://next.biomejs.dev/linter/rules/use-max-params/
+        //
+        // ╭╴Invalid:
+        // │ function foo(a, b, c, d, e, f, g, h) {
+        // │     // too many parameters
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ function foo(a, b, c) {
+        // │     // within limit
+        // │ }
+        // ╰╴
+        "useMaxParams": "warn"
+      }
+    }
+  }
+}

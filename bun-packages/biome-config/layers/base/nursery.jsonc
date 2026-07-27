@@ -1,0 +1,504 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  "linter": {
+    "rules": {
+      "nursery": {
+        // NOTE: Nursery rules are unstable and may change behavior or be
+        // removed/renamed in future Biome releases. Enable with care.
+        "recommended": false,
+        //
+        // Disallow stringifying values that only yield the default object form.
+        // See: https://next.biomejs.dev/linter/rules/no-base-to-string/
+        //
+        // WARN: belongs to the `types` domain: activating it enables the Biome
+        //       scanner + type inference engine over the whole project
+        //       See: https://biomejs.dev/linter/domains/#types
+        //
+        // ╭╴Valid:
+        // │ String(1);
+        // ╰╴
+        //
+        // Disallow `expect` calls inside conditionals in tests.
+        // See: https://next.biomejs.dev/linter/rules/no-conditional-expect/
+        //
+        // ╭╴Invalid:
+        // │ test("conditional expect", async ({ page }) => {
+        // │     if (someCondition) {
+        // │         await expect(page).toHaveTitle("Title");
+        // │     }
+        // │ });
+        // ╰╴
+        // ╭╴Valid:
+        // │ test("unconditional expect", async ({ page }) => {
+        // │     await expect(page).toHaveTitle("Title");
+        // │ });
+        // ╰╴
+        "noConditionalExpect": "error",
+        //
+        // Require all fields of a GraphQL type to be unique.
+        // See: https://next.biomejs.dev/linter/rules/no-duplicate-field-definition-names/
+        //
+        // ╭╴Invalid:
+        // │ type SomeObject {
+        // │   foo: String
+        // │   foo: String
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ type SomeObject {
+        // │   foo: String
+        // │   bar: String
+        // │ }
+        // ╰╴
+        "noDuplicateFieldDefinitionNames": "error",
+        //
+        // Disallow duplicate CSS selectors.
+        // See: https://next.biomejs.dev/linter/rules/no-duplicate-selectors/
+        //
+        // ╭╴Invalid:
+        // │ .foo {}
+        // │ .foo {}
+        // ╰╴
+        // ╭╴Valid:
+        // │ .foo {}
+        // │ .bar {}
+        // ╰╴
+        "noDuplicateSelectors": "error",
+        //
+        // Disallow empty keys in JSON objects.
+        // See: https://next.biomejs.dev/linter/rules/no-empty-object-keys/
+        //
+        // ╭╴Invalid:
+        // │ {
+        // │   "": "value"
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ {
+        // │   "key": "value"
+        // │ }
+        // ╰╴
+        "noEmptyObjectKeys": "error",
+        //
+        // Limit how deeply callbacks may be nested.
+        // See: https://next.biomejs.dev/linter/rules/no-excessive-nested-callbacks/
+        //
+        // ╭╴Invalid:
+        // │ foo1(function () {
+        // │     foo2(function () {
+        // │         foo3(function () {
+        // │             foo4(function () {
+        // │                 foo5(function () {
+        // │                     foo6(function () {});
+        // │                 });
+        // │             });
+        // │         });
+        // │     });
+        // │ });
+        // ╰╴
+        // ╭╴Valid:
+        // │ foo1(handleFoo1);
+        // │
+        // │ function handleFoo1() {
+        // │     foo2(handleFoo2);
+        // │ }
+        // ╰╴
+        "noExcessiveNestedCallbacks": "error",
+        //
+        // Limit the number of classes in a single CSS selector.
+        // See: https://next.biomejs.dev/linter/rules/no-excessive-selector-classes/
+        //
+        "noExcessiveSelectorClasses": "off",
+        //
+        // Disallow identical test/suite titles.
+        // See: https://next.biomejs.dev/linter/rules/no-identical-test-title/
+        //
+        // ╭╴Invalid:
+        // │ it('should do bar', () => {});
+        // │ it('should do bar', () => {});
+        // ╰╴
+        // ╭╴Valid:
+        // │ describe('foo', () => {
+        // │   it('should do foo', () => {});
+        // │   it('should do bar', () => {});
+        // │ });
+        // │
+        // │ describe('bar', () => {});
+        // ╰╴
+        "noIdenticalTestTitle": "error",
+        //
+        // Disallow `eval`-like usage such as string `setTimeout`.
+        // See: https://next.biomejs.dev/linter/rules/no-implied-eval/
+        //
+        // ╭╴Invalid:
+        // │ setTimeout("alert('Hello world!');", 100);
+        // ╰╴
+        // ╭╴Valid:
+        // │ setTimeout(function() {
+        // │     alert('Hello world!');
+        // │ }, 100);
+        // ╰╴
+        "noImpliedEval": "error",
+        //
+        // Disallow inline styles.
+        // See: https://next.biomejs.dev/linter/rules/no-inline-styles/
+        //
+        // ╭╴Invalid:
+        // │ <div style={{ color: "red" }}>Error</div>
+        // ╰╴
+        // ╭╴Valid:
+        // │ <div className="text-red">Error</div>
+        // ╰╴
+        "noInlineStyles": "error",
+        //
+        // Disallow creating functions inside loops that capture unsafe variables.
+        // See: https://next.biomejs.dev/linter/rules/no-loop-func/
+        //
+        // ╭╴Invalid:
+        // │ for (var i = 0; i < 10; i++) {
+        // │     handlers.push(() => i);
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ for (let i = 0; i < 10; i++) {
+        // │     handlers.push(() => i);
+        // │ }
+        // ╰╴
+        "noLoopFunc": "error",
+        //
+        // Disallow a negated expression on the left of an equality check.
+        // See: https://next.biomejs.dev/linter/rules/no-negation-in-equality-check/
+        //
+        // ╭╴Invalid:
+        // │ if (!foo === bar) {}
+        // ╰╴
+        // ╭╴Valid:
+        // │ if (foo !== bar) {}
+        // ╰╴
+        "noNegationInEqualityCheck": "error",
+        //
+        // Disallow dependencies that have preferred alternatives.
+        // See: https://next.biomejs.dev/linter/rules/no-restricted-dependencies/
+        //
+        // WARN: off: no-op until a deny-list is configured via
+        //       options.denyDependencies (e.g. ban globby in favor of tinyglobby)
+        //
+        // ╭╴Invalid:
+        // │ import glob from "globby";
+        // ╰╴
+        // ╭╴Valid:
+        // │ import glob from "tinyglobby";
+        // ╰╴
+        "noRestrictedDependencies": "off",
+        //
+        // Require the JSON top-level value to be an array or object.
+        // See: https://next.biomejs.dev/linter/rules/no-top-level-literals/
+        //
+        // ╭╴Invalid:
+        // │ "just a string"
+        // ╰╴
+        // ╭╴Valid:
+        // │ {
+        // │   "property": "value",
+        // │   "otherProperty": 123
+        // │ }
+        // ╰╴
+        "noTopLevelLiterals": "error",
+        //
+        // Disallow template literals whose expressions are unnecessary.
+        // See: https://next.biomejs.dev/linter/rules/no-unnecessary-template-expression/
+        //
+        // ╭╴Invalid:
+        // │ const a = `${'hello'}`;
+        // ╰╴
+        // ╭╴Valid:
+        // │ // Template with a non-string-literal expression
+        // │ const a = `${someVariable}`;
+        // ╰╴
+        "noUnnecessaryTemplateExpression": "error",
+        //
+        // Prefer `Array#some` over `filter().length > 0`.
+        // See: https://next.biomejs.dev/linter/rules/use-array-some/
+        //
+        // ╭╴Invalid:
+        // │ array.filter(predicate).length > 0;
+        // ╰╴
+        // ╭╴Valid:
+        // │ array.some(predicate);
+        // ╰╴
+        "useArraySome": "error",
+        //
+        // Disallow CSS features outside the configured Baseline.
+        // See: https://next.biomejs.dev/linter/rules/use-baseline/
+        //
+        // ╭╴Invalid:
+        // │ a {
+        // │   backdrop-filter: blur(4px);
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ a { color: red; }
+        // ╰╴
+        "useBaseline": "error",
+        //
+        // Enforce consistent use of `it` vs `test`.
+        // See: https://next.biomejs.dev/linter/rules/use-consistent-test-it/
+        //
+        // ╭╴Invalid:
+        // │ test("foo", () => {});
+        // ╰╴
+        // ╭╴Valid:
+        // │ it("foo", () => {});
+        // ╰╴
+        "useConsistentTestIt": {
+          "level": "error",
+          "options": {
+            "function": "it",
+            "withinDescribe": "it"
+          }
+        },
+        //
+        // Prefer `.textContent` over `.innerText`.
+        // See: https://next.biomejs.dev/linter/rules/use-dom-node-text-content/
+        //
+        // ╭╴Invalid:
+        // │ const text = node.innerText;
+        // ╰╴
+        // ╭╴Valid:
+        // │ const text = node.textContent;
+        // ╰╴
+        "useDomNodeTextContent": "error",
+        //
+        // Prefer `querySelector`/`querySelectorAll` over legacy DOM getters.
+        // See: https://next.biomejs.dev/linter/rules/use-dom-query-selector/
+        //
+        // ╭╴Invalid:
+        // │ document.getElementById("foo");
+        // ╰╴
+        // ╭╴Valid:
+        // │ document.querySelector("#foo");
+        // ╰╴
+        "useDomQuerySelector": "error",
+        //
+        // Require each test to contain at least one assertion.
+        // See: https://next.biomejs.dev/linter/rules/use-expect/
+        //
+        // ╭╴Invalid:
+        // │ test("no assertion", async ({ page }) => {
+        // │     await page.goto("/");
+        // │     await page.click("button");
+        // │ });
+        // ╰╴
+        // ╭╴Valid:
+        // │ test("has assertion", async ({ page }) => {
+        // │     await page.goto("/");
+        // │     await expect(page).toHaveTitle("Title");
+        // │ });
+        // ╰╴
+        "useExpect": "error",
+        //
+        // Require explicit return types on functions and methods.
+        // See: https://next.biomejs.dev/linter/rules/use-explicit-return-type/
+        //
+        // ╭╴Invalid:
+        // │ // Should indicate that no value is returned (void)
+        // │ function test() {
+        // │   return;
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ // No return value should be expected (void)
+        // │ function test(): void {
+        // │   return;
+        // │ }
+        // ╰╴
+        "useExplicitReturnType": "off",
+        //
+        // Require the `sandbox` attribute on `<iframe>` elements.
+        // See: https://next.biomejs.dev/linter/rules/use-iframe-sandbox/
+        //
+        // ╭╴Invalid:
+        // │ function MyComponent() {
+        // │   return <iframe src="https://example.com" />;
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ function MyComponent() {
+        // │   return <iframe src="https://example.com" sandbox="allow-popups" />;
+        // │ }
+        // ╰╴
+        "useIframeSandbox": "error",
+        //
+        // Require all imports to appear at the top of the module.
+        // See: https://next.biomejs.dev/linter/rules/use-imports-first/
+        //
+        // ╭╴Invalid:
+        // │ import { foo } from "foo";
+        // │ const bar = 1;
+        // │ import { baz } from "baz";
+        // ╰╴
+        // ╭╴Valid:
+        // │ import { foo } from "foo";
+        // │ import { bar } from "bar";
+        // │ const baz = 1;
+        // ╰╴
+        "useImportsFirst": "error",
+        //
+        // Prefer `Math.min`/`Math.max` over clamping ternaries.
+        // See: https://next.biomejs.dev/linter/rules/use-math-min-max/
+        //
+        // ╭╴Invalid:
+        // │ height > 50 ? 50 : height;
+        // ╰╴
+        // ╭╴Valid:
+        // │ Math.min(height, 50);
+        // ╰╴
+        "useMathMinMax": "error",
+        //
+        // Enforce named capture groups in regular expressions.
+        // See: https://next.biomejs.dev/linter/rules/use-named-capture-group/
+        //
+        // ╭╴Invalid:
+        // │ /(ba[rz])/;
+        // ╰╴
+        // ╭╴Valid:
+        // │ /(?<id>ba[rz])/;
+        // │ /(?:ba[rz])/;
+        // │ /ba[rz]/;
+        // │ /(?<year>[0-9]{4})-(?<month>[0-9]{2})/;
+        // │ new RegExp("(?<id>foo)");
+        // │ new RegExp(pattern);
+        // ╰╴
+        "useNamedCaptureGroup": "warn",
+        //
+        // Prefer the nullish coalescing operator `??` over `||`.
+        // See: https://next.biomejs.dev/linter/rules/use-nullish-coalescing/
+        //
+        // WARN: commented out by preference; enable once reviewed. `??` differs from
+        //       `||` on falsy-but-defined values (0, "", false)
+        //
+        // ╭╴Valid:
+        // │ declare const maybeString: string | null;
+        // │ const value = maybeString ?? 'default';
+        // ╰╴
+        // "useNullishCoalescing": "error",
+        //
+        // Prefer a type parameter on `Array#reduce` over casting the seed.
+        // See: https://next.biomejs.dev/linter/rules/use-reduce-type-parameter/
+        //
+        // ╭╴Invalid:
+        // │ const arr: number[] = [1, 2, 3];
+        // │ arr.reduce((sum, num) => sum.concat(num * 2), [] as number[]);
+        // ╰╴
+        // ╭╴Valid:
+        // │ const arr: number[] = [1, 2, 3];
+        // │ arr.reduce<number[]>((sum, num) => sum.concat(num * 2), []);
+        // │
+        // │ arr.reduce((a, b) => a + b);
+        // │
+        // │ arr.reduce((sum, n) => sum + n, 0);
+        // ╰╴
+        "useReduceTypeParameter": "error",
+        //
+        // Prefer `RegExp#test` in boolean contexts.
+        // See: https://next.biomejs.dev/linter/rules/use-regexp-test/
+        //
+        // ╭╴Invalid:
+        // │ if ("hello world".match(/hello/)) {}
+        // ╰╴
+        // ╭╴Valid:
+        // │ if (/hello/.test("hello world")) {}
+        // ╰╴
+        "useRegexpTest": "error",
+        //
+        // Require lifecycle hooks to be declared in execution order.
+        // See: https://next.biomejs.dev/linter/rules/use-test-hooks-in-order/
+        //
+        // ╭╴Invalid:
+        // │ describe('foo', () => {
+        // │   beforeEach(() => {});
+        // │   beforeAll(() => {});
+        // │ });
+        // ╰╴
+        // ╭╴Valid:
+        // │ describe('foo', () => {
+        // │   beforeAll(() => {});
+        // │   beforeEach(() => {});
+        // │   afterEach(() => {});
+        // │   afterAll(() => {});
+        // │ });
+        // ╰╴
+        "useTestHooksInOrder": "error",
+        //
+        // Require lifecycle hooks before test cases in a block.
+        // See: https://next.biomejs.dev/linter/rules/use-test-hooks-on-top/
+        //
+        // ╭╴Invalid:
+        // │ describe('foo', () => {
+        // │   it('does something', () => {});
+        // │   beforeEach(() => {});
+        // │ });
+        // ╰╴
+        // ╭╴Valid:
+        // │ describe('foo', () => {
+        // │   beforeEach(() => {});
+        // │   it('does something', () => {});
+        // │ });
+        // ╰╴
+        "useTestHooksOnTop": "error",
+        //
+        // Require class methods to reference `this`.
+        // See: https://next.biomejs.dev/linter/rules/use-this-in-class-methods/
+        //
+        // ╭╴Invalid:
+        // │ class A {
+        // │     foo() {
+        // │         console.log("Hello");
+        // │     }
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ class A {
+        // │     foo() {
+        // │         this.value = "Hello";
+        // │     }
+        // │ }
+        // ╰╴
+        "useThisInClassMethods": "error",
+        //
+        // Require the `u` or `v` flag on regular expressions.
+        // See: https://next.biomejs.dev/linter/rules/use-unicode-regex/
+        //
+        // ╭╴Invalid:
+        // │ /foo/;
+        // ╰╴
+        // ╭╴Valid:
+        // │ /foo/u;
+        // │ /foo/v;
+        // │ /foo/giu;
+        // │ new RegExp("foo", "u");
+        // │ new RegExp("foo", "giv");
+        // │ new RegExp("foo", flags); // dynamic flags are ignored
+        // ╰╴
+        "useUnicodeRegex": "warn",
+        //
+        // Require `var` declarations at the top of their scope.
+        // See: https://next.biomejs.dev/linter/rules/use-vars-on-top/
+        //
+        // ╭╴Invalid:
+        // │ function f() {
+        // │     doSomething();
+        // │     var value = 1;
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ function f() {
+        // │     var value = 1;
+        // │     doSomething(value);
+        // │ }
+        // ╰╴
+        "useVarsOnTop": "error"
+      }
+    }
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  "linter": {
+    "rules": {
+      "style": {
+        //
+        // Disallow the Vue Options API; prefer `<script setup>` / Composition API.
+        // See: https://next.biomejs.dev/linter/rules/no-vue-options-api/
+        //
+        // ╭╴Invalid:
+        // │ <script>
+        // │ export default {
+        // │   data() {
+        // │     return { count: 0 }
+        // │   }
+        // │ }
+        // │ </script>
+        // ╰╴
+        // ╭╴Valid:
+        // │ <script setup>
+        // │ import { ref } from 'vue'
+        // │ const count = ref(0)
+        // │ </script>
+        // ╰╴
+        "noVueOptionsApi": "error",
+        //
+        // Enforce a consistent `v-bind` style (shorthand `:foo`).
+        // See: https://next.biomejs.dev/linter/rules/use-vue-consistent-vbind-style/
+        //
+        // ╭╴Invalid:
+        // │ <div v-bind:foo="bar" />
+        // ╰╴
+        // ╭╴Valid:
+        // │ <div :foo="bar" />
+        // │ <div v-bind="props" />
+        // ╰╴
+        "useVueConsistentVBindStyle": {
+          "level": "error",
+          "options": {
+            "style": "shorthand"
+          }
+        },
+        //
+        // Enforce a consistent `v-on` style (shorthand `@click`).
+        // See: https://next.biomejs.dev/linter/rules/use-vue-consistent-von-style/
+        //
+        // ╭╴Invalid:
+        // │ <div v-on:click="onClick" />
+        // ╰╴
+        // ╭╴Valid:
+        // │ <div @click="onClick" />
+        // ╰╴
+        "useVueConsistentVOnStyle": {
+          "level": "error",
+          "options": {
+            "style": "shorthand"
+          }
+        },
+        //
+        // Enforce a consistent order for `defineProps`/`defineEmits`/etc. macros.
+        // See: https://next.biomejs.dev/linter/rules/use-vue-define-macros-order/
+        //
+        // ╭╴Invalid:
+        // │ <script lang="ts" setup>
+        // │ const emit = defineEmits(['update'])
+        // │ const props = defineProps<{ name: string }>()
+        // │ </script>
+        // ╰╴
+        // ╭╴Valid:
+        // │ <script lang="ts" setup>
+        // │ const props = defineProps<{ name: string }>()
+        // │ const emit = defineEmits(['update'])
+        // │ </script>
+        // ╰╴
+        "useVueDefineMacrosOrder": "error",
+        //
+        // Enforce kebab-case attribute names in Vue templates.
+        // See: https://next.biomejs.dev/linter/rules/use-vue-hyphenated-attributes/
+        //
+        // ╭╴Invalid:
+        // │ <div fooBar="x"></div>
+        // ╰╴
+        // ╭╴Valid:
+        // │ <div data-test-id="x"></div>
+        // │ <div class="foo"></div>
+        // │ <MyComp :some-prop="x" />
+        // ╰╴
+        "useVueHyphenatedAttributes": "error",
+        //
+        // Require component names to be multi-word (avoids clashing with HTML elements).
+        // See: https://next.biomejs.dev/linter/rules/use-vue-multi-word-component-names/
+        //
+        // ╭╴Invalid:
+        // │ <script>
+        // │ export default {
+        // │   name: "Foo"
+        // │ };
+        // │ </script>
+        // ╰╴
+        // ╭╴Valid:
+        // │ <script>
+        // │ export default {
+        // │   name: "MyComponent"
+        // │ };
+        // │ </script>
+        // ╰╴
+        "useVueMultiWordComponentNames": "error"
+      }
+    }
+  }
+}

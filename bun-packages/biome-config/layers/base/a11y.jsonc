@@ -1,0 +1,24 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  "linter": {
+    "rules": {
+      "a11y": {
+        // Basically all a11y rules are enabled in the recommended settings, besides those defined below.
+        "recommended": true,
+        //
+        // Disallow use event handlers on non-interactive elements.
+        // See: https://next.biomejs.dev/linter/rules/no-noninteractive-element-interactions/
+        //
+        // ╭╴Invalid:
+        // │ <div @click="handler">button</div>
+        // ╰╴
+        // ╭╴Valid:
+        // │ <div role="button" @click="handler">button</div>
+        // ├╴
+        // │ <button @click="handler">button</button>
+        // ╰╴
+        "noNoninteractiveElementInteractions": "error"
+      }
+    }
+  }
+}

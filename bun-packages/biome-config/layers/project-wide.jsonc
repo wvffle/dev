@@ -1,0 +1,95 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  // LAYER: project-wide — rules that require the cross-file module graph.
+  // Additive: extend this ALONGSIDE base/vue/nuxt, e.g.
+  //   "extends": ["@wvffle/biome-config/nuxt", "@wvffle/biome-config/project-wide"]
+  // NOTE: these need full module resolution; enabling them triggers the Biome
+  //       Scanner to build the project module graph (perf cost, and it disables
+  //       some per-file scan optimizations). See:
+  //       https://biomejs.dev/linter/domains/#project
+  "linter": {
+    "rules": {
+      "correctness": {
+        //
+        // Disallow imports of symbols that cannot be resolved.
+        // See: https://next.biomejs.dev/linter/rules/no-unresolved-imports/
+        //
+        // WARN: requires full module resolution (the Biome scanner must resolve
+        //       every import); can slow linting and produce false positives with
+        //       unusual resolvers/aliases
+        //       See: https://biomejs.dev/linter/rules/no-unresolved-imports/#caveats
+        //
+        "noUnresolvedImports": "error"
+      },
+      "suspicious": {
+        //
+        // Disallow importing symbols marked `@deprecated`.
+        // See: https://next.biomejs.dev/linter/rules/no-deprecated-imports/
+        //
+        // WARN: project-level rule: requires resolving imported modules to read
+        //       their JSDoc; enable once verified against your resolver/alias setup
+        //       See: https://biomejs.dev/linter/rules/no-deprecated-imports/
+        //
+        "noDeprecatedImports": "warn",
+        //
+        // Prevent cyclic imports.
+        // See: https://next.biomejs.dev/linter/rules/no-import-cycles/
+        //
+        // WARN: requires full module resolution to build the import graph; can be
+        //       slow on large projects
+        //       See: https://biomejs.dev/linter/rules/no-import-cycles/
+        //
+        "noImportCycles": "error"
+      },
+      "nursery": {
+        //
+        // Disallow class selectors used in markup but never declared in styles.
+        // See: https://next.biomejs.dev/linter/rules/no-undeclared-classes/
+        //
+        // WARN: belongs to the `project` domain: activating it triggers the Biome
+        //       scanner to build the project graph
+        //       See: https://biomejs.dev/linter/domains/#project
+        //
+        // ╭╴Invalid:
+        // │ <div class="header">Content</div>
+        // ╰╴
+        // ╭╴Valid:
+        // │ <style>.card { border: 1px solid; }</style>
+        // │ <div class="card">Content</div>
+        // ╰╴
+        "noUndeclaredClasses": "off",
+        //
+        // Disallow dependencies with untrusted licenses.
+        // See: https://next.biomejs.dev/linter/rules/no-untrusted-licenses/
+        //
+        // WARN: belongs to the `project` domain: activating it triggers the Biome
+        //       scanner to inspect the dependency graph
+        //       See: https://biomejs.dev/linter/domains/#project
+        //
+        // ╭╴Invalid:
+        // │ {
+        // │     "dependencies": {
+        // │         "untrusted-pkg": "^1.0.0"
+        // │     }
+        // │ }
+        // ╰╴
+        "noUntrustedLicenses": {
+          "level": "warn",
+          "options": {
+            "requireOsiApproved": true,
+            "requireFsfLibre": true
+          }
+        },
+        //
+        // Flag CSS class selectors never referenced in markup.
+        // See: https://next.biomejs.dev/linter/rules/no-unused-classes/
+        //
+        // WARN: belongs to the `project` domain: activating it triggers the Biome
+        //       scanner to build the project graph
+        //       See: https://biomejs.dev/linter/domains/#project
+        //
+        "noUnusedClasses": "warn"
+      }
+    }
+  }
+}

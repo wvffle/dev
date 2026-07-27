@@ -1,0 +1,23 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  "linter": {
+    "rules": {
+      "correctness": {
+        "recommended": true,
+        // Disallow the use of __dirname and __filename in the global scope.
+        "noGlobalDirnameFilename": "error",
+        //
+        // Disallow `new` expressions whose result is unused.
+        // See: https://next.biomejs.dev/linter/rules/no-unused-instantiation/
+        //
+        // ╭╴Invalid:
+        // │ new Thing();
+        // ╰╴
+        // ╭╴Valid:
+        // │ const thing = new Thing();
+        // ╰╴
+        "noUnusedInstantiation": "error"
+      }
+    }
+  }
+}

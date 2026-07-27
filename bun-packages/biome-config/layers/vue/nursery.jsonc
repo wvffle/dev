@@ -1,0 +1,125 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  "linter": {
+    "rules": {
+      "nursery": {
+        //
+        // Disallow importing Vue compiler macros (they are auto-available).
+        // See: https://next.biomejs.dev/linter/rules/no-vue-import-compiler-macros/
+        //
+        // ╭╴Invalid:
+        // │ <script setup>
+        // │ import { defineProps } from "vue";
+        // │ defineProps({});
+        // │ </script>
+        // ╰╴
+        // ╭╴Valid:
+        // │ <script setup>
+        // │ defineProps({});
+        // │ </script>
+        // ╰╴
+        "noVueImportCompilerMacros": "error",
+        //
+        // Disallow using a `ref()` value directly as an operand (missing `.value`).
+        // See: https://next.biomejs.dev/linter/rules/no-vue-ref-as-operand/
+        //
+        // ╭╴Invalid:
+        // │ import { ref } from "vue"
+        // │
+        // │ const count = ref(0)
+        // │ count++
+        // ╰╴
+        // ╭╴Valid:
+        // │ import { ref } from "vue"
+        // │
+        // │ const count = ref(0)
+        // │ count.value++
+        // ╰╴
+        "noVueRefAsOperand": "error",
+        //
+        // Disallow deprecated numeric key-code modifiers on `v-on`.
+        // See: https://next.biomejs.dev/linter/rules/no-vue-von-number-values/
+        //
+        // ╭╴Invalid:
+        // │ <input v-on:keyup.13="submit" />
+        // ╰╴
+        // ╭╴Valid:
+        // │ <input v-on:keyup.enter="submit" />
+        // ╰╴
+        "noVueVOnNumberValues": "error",
+        //
+        // Require `<style scoped>` (or `module`) in Vue SFCs.
+        // See: https://next.biomejs.dev/linter/rules/use-scoped-styles/
+        //
+        // ╭╴Invalid:
+        // │ <style>
+        // │ .foo { color: red; }
+        // │ </style>
+        // ╰╴
+        // ╭╴Valid:
+        // │ <style scoped>
+        // │ .foo { color: red; }
+        // │ </style>
+        // ╰╴
+        "useScopedStyles": "error",
+        //
+        // Enforce a consistent `defineProps` declaration style (type-based).
+        // See: https://next.biomejs.dev/linter/rules/use-vue-consistent-define-props-declaration/
+        //
+        // ╭╴Invalid:
+        // │ <script setup lang="ts">
+        // │ const props = defineProps({
+        // │   kind: { type: String },
+        // │ });
+        // │ </script>
+        // ╰╴
+        // ╭╴Valid:
+        // │ <script setup lang="ts">
+        // │ const props = defineProps<{
+        // │   kind: string;
+        // │ }>();
+        // │ </script>
+        // ╰╴
+        "useVueConsistentDefinePropsDeclaration": {
+          "level": "error",
+          "options": {
+            "style": "type"
+          }
+        },
+        //
+        // Enforce the Promise form of Vue `nextTick`.
+        // See: https://next.biomejs.dev/linter/rules/use-vue-next-tick-promise/
+        //
+        // ╭╴Invalid:
+        // │ <script>
+        // │ import { nextTick } from "vue";
+        // │
+        // │ nextTick(() => {
+        // │   // ...
+        // │ });
+        // │ </script>
+        // ╰╴
+        // ╭╴Valid:
+        // │ <script>
+        // │ import { nextTick } from "vue";
+        // │
+        // │ await nextTick();
+        // │ // ...
+        // │ </script>
+        // ╰╴
+        "useVueNextTickPromise": "error",
+        //
+        // Enforce valid `v-for` directives in Vue templates.
+        // See: https://next.biomejs.dev/linter/rules/use-vue-valid-vfor/
+        //
+        // ╭╴Invalid:
+        // │ <div v-for:aaa="item in items"></div>
+        // ╰╴
+        // ╭╴Valid:
+        // │ <div v-for="item in items"></div>
+        // ╰╴
+        "useVueValidVFor": "error"
+      }
+    }
+  }
+}

@@ -1,0 +1,171 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  // LAYER: types — rules that require Biome's type-inference engine.
+  // Additive: extend this ALONGSIDE base/vue/nuxt, e.g.
+  //   "extends": ["@wvffle/biome-config/nuxt", "@wvffle/biome-config/types"]
+  // NOTE: enabling these turns on the Biome Scanner + type inference over the
+  //       whole project (a real perf cost). See:
+  //       https://biomejs.dev/linter/domains/#types
+  "linter": {
+    "rules": {
+      "complexity": {
+        //
+        // Prefer `Array#find` over `filter()[0]` for a single match.
+        // See: https://next.biomejs.dev/linter/rules/use-array-find/
+        //
+        // WARN: belongs to the `types` domain: activating it enables the Biome
+        //       scanner + type inference over the whole project
+        //       See: https://biomejs.dev/linter/domains/#types
+        //
+        "useArrayFind": "error"
+      },
+      "style": {
+        //
+        // Disallow enums mixing string and number members.
+        // See: https://next.biomejs.dev/linter/rules/use-consistent-enum-value-type/
+        //
+        // WARN: belongs to the `types` domain: activating it enables the Biome
+        //       scanner + type inference engine over the whole project
+        //       See: https://biomejs.dev/linter/domains/#types
+        //
+        // ╭╴Invalid:
+        // │ enum Status {
+        // │   Unknown,
+        // │   Closed = 1,
+        // │   Open = 'open',
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ enum Status {
+        // │   Unknown = 0,
+        // │   Closed = 1,
+        // │   Open = 2,
+        // │ }
+        // ╰╴
+        "useConsistentEnumValueType": "error"
+      },
+      "suspicious": {
+        //
+        // Disallow conditions that are always truthy or always falsy.
+        // See: https://next.biomejs.dev/linter/rules/no-unnecessary-conditions/
+        //
+        // WARN: requires the `project` / type domain (type-aware); can be noisy
+        //       See: https://biomejs.dev/linter/domains/#project
+        //
+        // ╭╴Invalid:
+        // │ function head<T>(items: T[]) {
+        // │     if (items) {
+        // │         return items[0];
+        // │     }
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ function head<T>(items: T[] | null) {
+        // │     if (items) {
+        // │         return items[0];
+        // │     }
+        // │ }
+        // │
+        // │ function bar(arg: string | undefined) {
+        // │     return arg?.length;
+        // │ }
+        // │
+        // │ function f(v: 'a' | 'b' | 'c') {
+        // │     switch (v) {
+        // │         case 'a': break;
+        // │         case 'b': break;
+        // │         case 'c': break;
+        // │     }
+        // │ }
+        // │
+        // │ let greeting = false;
+        // │ function update() { greeting = "Hello"; }
+        // │ if (greeting) {}
+        // ╰╴
+        "noUnnecessaryConditions": "warn",
+        //
+        // Require a compare function for `sort`/`toSorted`.
+        // See: https://next.biomejs.dev/linter/rules/use-array-sort-compare/
+        //
+        // WARN: belongs to the `types` domain: activating it enables the Biome
+        //       scanner + type inference over the whole project
+        //       See: https://biomejs.dev/linter/domains/#types
+        //
+        "useArraySortCompare": "warn"
+      },
+      "nursery": {
+        "noBaseToString": "error",
+        //
+        // Disallow `+` with operands of unsafe/mismatched types.
+        // See: https://next.biomejs.dev/linter/rules/no-unsafe-plus-operands/
+        //
+        // WARN: belongs to the `types` domain: activating it enables the Biome
+        //       scanner + type inference engine over the whole project
+        //       See: https://biomejs.dev/linter/domains/#types
+        //
+        "noUnsafePlusOperands": "error",
+        //
+        // Disallow `await` on values that are not thenable.
+        // See: https://next.biomejs.dev/linter/rules/use-await-thenable/
+        //
+        // WARN: belongs to the `types` domain: activating it enables the Biome
+        //       scanner + type inference engine over the whole project
+        //       See: https://biomejs.dev/linter/domains/#types
+        //
+        "useAwaitThenable": "warn",
+        //
+        // Flag disposables assigned without `using`/`await using`.
+        // See: https://next.biomejs.dev/linter/rules/use-disposables/
+        //
+        // WARN: type-aware: relies on the `types` domain (Biome scanner + type
+        //       inference over the project)
+        //       See: https://biomejs.dev/linter/domains/#types
+        //
+        "useDisposables": "warn",
+        //
+        // Prefer `RegExp#exec` over `String#match` when there is no global flag.
+        // See: https://next.biomejs.dev/linter/rules/use-regexp-exec/
+        //
+        // WARN: type-aware: relies on the `types` domain (Biome scanner + type
+        //       inference over the project)
+        //       See: https://biomejs.dev/linter/domains/#types
+        //
+        "useRegexpExec": "warn",
+        //
+        // Prefer `String#startsWith`/`endsWith` over manual checks.
+        // See: https://next.biomejs.dev/linter/rules/use-string-starts-ends-with/
+        //
+        // WARN: type-aware: relies on the `types` domain (Biome scanner + type
+        //       inference over the project)
+        //       See: https://biomejs.dev/linter/domains/#types
+        //
+        "useStringStartsEndsWith": "error",
+        //
+        // Disallow return types wider than what a function actually returns.
+        // See: https://next.biomejs.dev/linter/rules/no-misleading-return-type/
+        //
+        // WARN: belongs to the `types` domain: activating it enables the Biome
+        //       scanner + type inference over the whole project
+        //       See: https://biomejs.dev/linter/domains/#types
+        //
+        // ╭╴Valid:
+        // │ function getStatus() { return "loading"; }
+        // ╰╴
+        "noMisleadingReturnType": "error",
+        //
+        // Prefer `.includes()` over `.indexOf() !== -1`.
+        // See: https://next.biomejs.dev/linter/rules/use-includes/
+        //
+        // WARN: belongs to the `types` domain: activating it enables the Biome
+        //       scanner + type inference over the whole project
+        //       See: https://biomejs.dev/linter/domains/#types
+        //
+        // ╭╴Valid:
+        // │ const arr = [1, 2, 3];
+        // │ arr.includes(1);
+        // ╰╴
+        "useIncludes": "error"
+      }
+    }
+  }
+}

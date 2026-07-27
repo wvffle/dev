@@ -1,0 +1,3 @@
+[test]
+# Build dist/ before the suite so `bun test` is self-contained.
+preload = ["./tests/setup.mjs"]

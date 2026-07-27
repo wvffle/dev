@@ -1,0 +1,22 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  "linter": {
+    "rules": {
+      "performance": {
+        //
+        // Require Vue Vapor mode (`<script setup vapor>`).
+        // See: https://next.biomejs.dev/linter/rules/use-vue-vapor/
+        //
+        // ╭╴Invalid:
+        // │ <script setup>
+        // │ </script>
+        // ╰╴
+        // ╭╴Valid:
+        // │ <script setup vapor>
+        // │ </script>
+        // ╰╴
+        "useVueVapor": "warn"
+      }
+    }
+  }
+}

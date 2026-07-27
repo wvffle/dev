@@ -1,0 +1,110 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  "formatter": {
+    "enabled": true,
+    "useEditorconfig": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 120,
+    "attributePosition": "auto",
+    "bracketSpacing": true
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      //
+      // Trailing commas are always added.
+      //
+      // ╭╴Example:
+      // │ const object = {
+      // │   value: 8,
+      // │ }
+      // ╰╴
+      "trailingCommas": "all",
+      //
+      // Object properties are quoted only if needed.
+      //
+      // ╭╴Example:
+      // │ const object = {
+      // │   key1: 8,
+      // │   'key-2': 42,
+      // │ }
+      // ╰╴
+      "quoteProperties": "asNeeded",
+      //
+      // Semicolons are added only if needed.
+      //
+      // ╭╴Example:
+      // │ const a = 8
+      // ├╴
+      // │ ;(() => 8)()
+      // ╰╴
+      "semicolons": "asNeeded",
+      //
+      // Parentheses around single argument in
+      // arrow functions are added.
+      //
+      // ╭╴Example:
+      // │ const f = (x) => x * 2
+      // ╰╴
+      "arrowParentheses": "always",
+      //
+      // Strings use single quotes.
+      //
+      // ╭╴Example:
+      // │ const string = 'value'
+      // ╰╴
+      "quoteStyle": "single",
+      //
+      // A space around brackets is added.
+      //
+      // ╭╴Example:
+      // │ import { sort } from "sort.js"
+      // │ const value = { sort }
+      // ╰╴
+      "bracketSpacing": true,
+      //
+      // The operators are pushed to the beginning
+      // of a new line.
+      //
+      // ╭╴Example:
+      // │ const value = condition 1
+      // │               || condition2
+      // │               || condition3
+      // ╰╴
+      "operatorLinebreak": "before",
+      //
+      // The closing bracket of multiline element
+      // openings is pushed to a new line.
+      //
+      // ╭╴Example:
+      // │ <Button
+      // │   as="link"
+      // │ >
+      // │   Hit me
+      // │ </Button>
+      // ╰╴
+      "bracketSameLine": false,
+      //
+      // The attributes are automatically pushed to a
+      // new line if the element is too wide.
+      //
+      // ╭╴Example:
+      // │ <Button as="link" style="primary"
+      // │   href="https://example.com"
+      // │ >
+      // │   Hit me
+      // │ </Button>
+      // ╰╴
+      "attributePosition": "auto"
+    }
+  }
+}

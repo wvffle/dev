@@ -1,0 +1,53 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  "linter": {
+    "rules": {
+      "performance": {
+        "recommended": true,
+        //
+        // Disallow await inside loops.
+        // See: https://next.biomejs.dev/linter/rules/no-await-in-loops/
+        //
+        // ╭╴Invalid:
+        // │ for (const item of array) {
+        // │   await f(item)
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ await Promise.all(array.map((item) => f(item)))
+        // ╰╴
+        "noAwaitInLoops": "error",
+        //
+        // Disallow inline arrow/bind expressions in JSX props.
+        // See: https://next.biomejs.dev/linter/rules/no-jsx-props-bind/
+        //
+        // ╭╴Invalid:
+        // │ <Foo onClick={this._handleClick.bind(this)}></Foo>
+        // ╰╴
+        // ╭╴Valid:
+        // │ <Foo onClick={this._handleClick}></Foo>
+        // ╰╴
+        "noJsxPropsBind": "error",
+        //
+        // Disallow synchronous scripts.
+        // See: https://next.biomejs.dev/linter/rules/no-sync-scripts/
+        //
+        // ╭╴Invalid:
+        // │ const Invalid = () => <script src="https://third-party-script.js" />;
+        // ╰╴
+        // ╭╴Valid:
+        // │ const Valid = () => {
+        // │   return (
+        // │     <>
+        // │       <script src="https://third-party-script.js" async />
+        // │       <script src="https://third-party-script.js" defer />
+        // │       <script src="https://third-party-script.js" type="module" />
+        // │     </>
+        // │   );
+        // │ }
+        // ╰╴
+        "noSyncScripts": "warn"
+      }
+    }
+  }
+}

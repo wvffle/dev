@@ -1,0 +1,28 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  "linter": {
+    "rules": {
+      "correctness": {
+        //
+        // Disallow destructuring props in `setup`, which loses reactivity.
+        // See: https://next.biomejs.dev/linter/rules/no-vue-setup-props-reactivity-loss/
+        //
+        // ╭╴Invalid:
+        // │ export default {
+        // │   setup({ count }) {
+        // │     return () => h('div', count);
+        // │   }
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ export default {
+        // │   setup(props) {
+        // │     return () => h('div', props.count);
+        // │   }
+        // │ }
+        // ╰╴
+        "noVueSetupPropsReactivityLoss": "error"
+      }
+    }
+  }
+}

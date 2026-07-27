@@ -1,0 +1,257 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  "linter": {
+    "rules": {
+      "suspicious": {
+        "recommended": true,
+        // Disallow the use of `alert`, `confirm`, and `prompt`.
+        "noAlert": "error",
+        // Disallow the use of `console`.
+        // "noConsole": "error",
+        // Disallow empty block statements and static blocks.
+        "noEmptyBlockStatements": "error",
+        // Disallow the use of `var`.
+        "noVar": "error",
+        // Enforce passing a message value when creating a built-in error.
+        "useErrorMessage": "error",
+        // Require for-in loops to include an if statement.
+        "useGuardForIn": "error",
+        //
+        // Disallow duplicate dependencies in `package.json`.
+        // See: https://next.biomejs.dev/linter/rules/no-duplicate-dependencies/
+        //
+        // ╭╴Invalid:
+        // │ {
+        // │     "dependencies": {
+        // │         "foo": "1.0.0",
+        // │         "foo": "2.0.0"
+        // │     }
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ {
+        // │     "dependencies": {
+        // │         "foo": "2.0.0"
+        // │     }
+        // │ }
+        // ╰╴
+        "noDuplicateDependencies": "error",
+        //
+        // Enforce unique operation names within a GraphQL document.
+        // See: https://next.biomejs.dev/linter/rules/no-duplicate-graphql-operation-name/
+        //
+        // ╭╴Invalid:
+        // │ query user {
+        // │   user {
+        // │     id
+        // │   }
+        // │ }
+        // │
+        // │ query user {
+        // │   me {
+        // │     id
+        // │   }
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ query user {
+        // │   user {
+        // │     id
+        // │   }
+        // │ }
+        // │
+        // │ query me {
+        // │   me {
+        // │     id
+        // │   }
+        // │ }
+        // ╰╴
+        "noDuplicateGraphqlOperationName": "error",
+        //
+        // Disallow spreading the same identifier multiple times in JSX.
+        // See: https://next.biomejs.dev/linter/rules/no-duplicated-spread-props/
+        //
+        // ╭╴Invalid:
+        // │ <div {...props} something="else" {...props} />
+        // ╰╴
+        // ╭╴Valid:
+        // │ <div something="else" {...props} />
+        // ╰╴
+        "noDuplicatedSpreadProps": "error",
+        //
+        // Disallow empty source files.
+        // See: https://next.biomejs.dev/linter/rules/no-empty-source/
+        //
+        // ╭╴Valid:
+        // │ const x = 0;
+        // ╰╴
+        "noEmptySource": "error",
+        //
+        // Require `===`/`!==` when comparing with `null`.
+        // See: https://next.biomejs.dev/linter/rules/no-equals-to-null/
+        //
+        // ╭╴Invalid:
+        // │ foo == null;
+        // ╰╴
+        // ╭╴Valid:
+        // │ foo === null;
+        // ╰╴
+        "noEqualsToNull": "error",
+        //
+        // Disallow `for...in` loops.
+        // See: https://next.biomejs.dev/linter/rules/no-for-in/
+        //
+        // ╭╴Invalid:
+        // │ for (const i in array) {
+        // │   console.log(i, array[i]);
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ for (const value of array) {
+        // │   console.log(value);
+        // │ }
+        // ╰╴
+        "noForIn": "off",
+        //
+        // Prevent leaked values from rendering unexpectedly.
+        // See: https://next.biomejs.dev/linter/rules/no-leaked-render/
+        //
+        // ╭╴Invalid:
+        // │ const Component = () => {
+        // │   const count = 0;
+        // │   return <div>{count && <span>Count: {count}</span>}</div>;
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ const Component = () => {
+        // │   const count = 0;
+        // │   return <div>{count > 0 && <span>Count: {count}</span>}</div>;
+        // │ }
+        // ╰╴
+        "noLeakedRender": "error",
+        //
+        // Disallow nesting `then`/`catch` promise handlers.
+        // See: https://next.biomejs.dev/linter/rules/no-nested-promises/
+        //
+        // ╭╴Invalid:
+        // │ doThing().then(function() { return a.then() })
+        // ╰╴
+        // ╭╴Valid:
+        // │ // Simple returns
+        // │ doThing().then(function() { return 4 })
+        // │ doThing().then(() => 4)
+        // ╰╴
+        "noNestedPromises": "error",
+        //
+        // Flag parameters used only in recursive calls.
+        // See: https://next.biomejs.dev/linter/rules/no-parameters-only-used-in-recursion/
+        //
+        // ╭╴Invalid:
+        // │ function factorial(n, acc) {
+        // │     if (n === 0) return 1;
+        // │     return factorial(n - 1, acc);
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ function factorial(n, acc) {
+        // │     if (n === 0) return acc;
+        // │     return factorial(n - 1, acc * n);
+        // │ }
+        // ╰╴
+        "noParametersOnlyUsedInRecursion": "warn",
+        //
+        // Disallow assignments inside `return` statements.
+        // See: https://next.biomejs.dev/linter/rules/no-return-assign/
+        //
+        // ╭╴Invalid:
+        // │ function f(a) {
+        // │     return a = 1;
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ function f(a) {
+        // │     a = 1;
+        // │     return a;
+        // │ }
+        // ╰╴
+        "noReturnAssign": "error",
+        //
+        // Disallow variable declarations that shadow an outer scope.
+        // See: https://next.biomejs.dev/linter/rules/no-shadow/
+        //
+        // ╭╴Invalid:
+        // │ const foo = "bar";
+        // │ if (true) {
+        // │    const foo = "baz";
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ const foo = "bar";
+        // │ if (true) {
+        // │    const qux = "baz";
+        // │ }
+        // ╰╴
+        "noShadow": "warn",
+        //
+        // Disallow unused expression statements.
+        // See: https://next.biomejs.dev/linter/rules/no-unused-expressions/
+        //
+        // ╭╴Invalid:
+        // │ 0
+        // ╰╴
+        // ╭╴Valid:
+        // │ {} // In this context, this is a block statement, not an object literal
+        // │
+        // │ { myLabel: foo() } // In this context, this is a block statement with a label and expression, not an object literal
+        // │
+        // │ function namedFunctionDeclaration () {}
+        // │
+        // │ (function aGenuineIIFE () {}());
+        // │
+        // │ f()
+        // │
+        // │ a = 0
+        // │
+        // │ new C
+        // │
+        // │ delete a.b
+        // │
+        // │ void a
+        // ╰╴
+        "noUnusedExpressions": "error",
+        //
+        // Require a deletion date on GraphQL `@deprecated` directives.
+        // See: https://next.biomejs.dev/linter/rules/use-deprecated-date/
+        //
+        // ╭╴Invalid:
+        // │ query {
+        // │   member @deprecated(reason: "Use `members` instead") {
+        // │     id
+        // │   }
+        // │ }
+        // ╰╴
+        // ╭╴Valid:
+        // │ query {
+        // │   member @deprecated(reason: "Use `members` instead", deletionDate: "2099-12-25") {
+        // │     id
+        // │   }
+        // │ }
+        // ╰╴
+        "useDeprecatedDate": "warn",
+        //
+        // Require specified scripts to be present in `package.json`.
+        // See: https://next.biomejs.dev/linter/rules/use-required-scripts/
+        //
+        // ╭╴Valid:
+        // │ {
+        // │     "scripts": {
+        // │         "test": "vitest",
+        // │         "build": "tsc"
+        // │     }
+        // │ }
+        // ╰╴
+        "useRequiredScripts": "off"
+      }
+    }
+  }
+}

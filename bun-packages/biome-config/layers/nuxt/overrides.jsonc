@@ -1,0 +1,159 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  "files": {
+    "ignoreUnknown": false,
+    "includes": ["**", "!.nuxt"]
+  },
+  "overrides": [
+    // NOTE: Pinia stores require following if-statement at the end of the file
+    // to accept HMR updates. Hence we need to disable `useExportsLast` rule for
+    // those files.
+    //
+    // if (import.meta.hot) {
+    //   import.meta.hot.accept(acceptHMRUpdate(useStoreName, import.meta.hot))
+    // }
+    {
+      "includes": ["app/stores/*.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useExportsLast": "off"
+          }
+        }
+      }
+    },
+    // NOTE: Components should be named with PascalCase.
+    // TODO: Create an issue in biome repo that allows for
+    // UPPERCASE filename case.
+    // {
+    //   "includes": ["app/components/**/*.vue"],
+    //   "linter": {
+    //     "rules": {
+    //       "style": {
+    //         "useFilenamingConvention": {
+    //           "level": "error",
+    //           "options": {
+    //             "strictCase": false,
+    //             "filenameCases": ["PascalCase"]
+    //           }
+    //         }
+    //       }
+    //     }
+    //   }
+    // },
+    // HACK: Turn filename convention checking off for components
+    // until above issue is fixed.
+    {
+      "includes": ["app/components/**/*.vue", "test/**/*.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useFilenamingConvention": "off"
+          }
+        }
+      }
+    },
+    // NOTE: Allow index.vue components only in subfolders
+    {
+      "includes": ["app/components/**/index.vue", "!app/components/index.vue"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useFilenamingConvention": "off"
+          }
+        }
+      }
+    },
+    // NOTE: Allow default exports in some nuxt files
+    {
+      "includes": [
+        // Some config files need default export
+        "**/*.config.{mjs,ts}",
+        "**/*.options.{mjs,ts}",
+        // Nuxt i18n locale detector needs default export
+        "i18n/localeDetector.ts",
+        "i18n/locale-detector.ts",
+        // Nuxt server routes need default export
+        "server/api/**/*.ts",
+        "server/routes/**/*.ts",
+        "server/middleware/**/*.ts",
+        // Nuxt plugins need default export
+        "app/plugins/**/*.ts",
+        // Nuxt middlewares need default export
+        "app/middleware/**/*.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noDefaultExport": "off"
+          }
+        }
+      }
+    },
+    // NOTE: Allow `process.env` in config files.
+    {
+      "includes": [
+        // Some config files may need `process.env`
+        "**/*.config.{mjs,ts}",
+        "**/*.options.{mjs,ts}"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noProcessEnv": "off"
+          }
+        }
+      }
+    },
+    // HACK: Allow unused variables in vue files, until
+    // biome can understand the usage of the variables in
+    // component template.
+    {
+      "includes": ["**/*.vue"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedVariables": "off",
+            "noUnusedImports": "off"
+          }
+        }
+      }
+    },
+    // NOTE: Disable naming convention in test files
+    {
+      "includes": ["test/**/*.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useNamingConvention": "off"
+          }
+        }
+      }
+    },
+    // NOTE: `app.vue` is the root component and is legitimately single-word;
+    // exempt it from the multi-word component-name rule. Add other Nuxt
+    // single-word conventional files here as needed (e.g. error.vue, layouts).
+    {
+      "includes": ["app/app.vue", "app/error.vue"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useVueMultiWordComponentNames": "off"
+          }
+        }
+      }
+    },
+    // NOTE: `app.vue` intentionally hosts global (unscoped) styles for the
+    // whole app, so the scoped-styles requirement is turned off there.
+    {
+      "includes": ["app/app.vue"],
+      "linter": {
+        "rules": {
+          "nursery": {
+            "useScopedStyles": "off"
+          }
+        }
+      }
+    }
+  ]
+}

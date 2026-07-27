@@ -1,0 +1,2 @@
+{ "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  "extends": ["../../../dist/base.json", "../../../dist/project-wide.json"] }

@@ -1,0 +1,32 @@
+{
+	"name": "@wvffle/biome-config",
+	"version": "1.0.0",
+	"description": "Shared Biome configuration (base / vue / nuxt layers).",
+	"license": "MIT",
+	"type": "module",
+	"files": [
+		"dist/"
+	],
+	"exports": {
+		".": "./dist/base.json",
+		"./base": "./dist/base.json",
+		"./vue": "./dist/vue.json",
+		"./nuxt": "./dist/nuxt.json",
+		"./types": "./dist/types.json",
+		"./project-wide": "./dist/project-wide.json"
+	},
+	"scripts": {
+		"build": "bun scripts/build.ts",
+		"test": "bun test",
+		"prepublishOnly": "bun scripts/build.ts"
+	},
+	"peerDependencies": {
+		"@biomejs/biome": "^2.5.5"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.5"
+	},
+	"trustedDependencies": [
+		"@biomejs/biome"
+	]
+}
