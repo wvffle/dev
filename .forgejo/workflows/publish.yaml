@@ -1,0 +1,31 @@
+name: Publish Container
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  publish-bun-package:
+    runs-on: nixos
+    strategy:
+      matrix:
+        package: [biome-config]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      # - name: Test
+      #   shell: devenv shell bash -- -e {0}
+      #   run: |
+      #     biome version
+      #     cd "bun-packages/${{ matrix.package }}"
+      #     bun test
+
+      - name: Publish
+        shell: devenv shell bash -- -e {0}
+        run: |
+          cd "bun-packages/${{ matrix.package }}"
+          export NPM_CONFIG_TOKEN="${{ secrets.WV_REGISTRY_TOKEN }}"
+          bun publish --tolerate-republish --registry "${{ forgejo.server_url }}/api/packages/wvffle/npm/"
