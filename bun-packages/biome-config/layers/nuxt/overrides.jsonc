@@ -2,7 +2,10 @@
   "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!.nuxt"]
+    "includes": [
+      "**",
+      "!.nuxt"
+    ]
   },
   "overrides": [
     // NOTE: Pinia stores require following if-statement at the end of the file
@@ -13,7 +16,9 @@
     //   import.meta.hot.accept(acceptHMRUpdate(useStoreName, import.meta.hot))
     // }
     {
-      "includes": ["app/stores/*.ts"],
+      "includes": [
+        "app/stores/*.ts"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -44,7 +49,10 @@
     // HACK: Turn filename convention checking off for components
     // until above issue is fixed.
     {
-      "includes": ["app/components/**/*.vue", "test/**/*.ts"],
+      "includes": [
+        "app/components/**/*.vue",
+        "test/**/*.ts"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -55,7 +63,10 @@
     },
     // NOTE: Allow index.vue components only in subfolders
     {
-      "includes": ["app/components/**/index.vue", "!app/components/index.vue"],
+      "includes": [
+        "app/components/**/index.vue",
+        "!app/components/index.vue"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -109,7 +120,9 @@
     // biome can understand the usage of the variables in
     // component template.
     {
-      "includes": ["**/*.vue"],
+      "includes": [
+        "**/*.vue"
+      ],
       "linter": {
         "rules": {
           "correctness": {
@@ -121,7 +134,9 @@
     },
     // NOTE: Disable naming convention in test files
     {
-      "includes": ["test/**/*.ts"],
+      "includes": [
+        "test/**/*.ts"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -134,7 +149,11 @@
     // exempt it from the multi-word component-name rule. Add other Nuxt
     // single-word conventional files here as needed (e.g. error.vue, layouts).
     {
-      "includes": ["app/app.vue", "app/error.vue"],
+      "includes": [
+        "app/app.vue",
+        "app/error.vue",
+        "app/components/*/**/*.vue"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -146,7 +165,9 @@
     // NOTE: `app.vue` intentionally hosts global (unscoped) styles for the
     // whole app, so the scoped-styles requirement is turned off there.
     {
-      "includes": ["app/app.vue"],
+      "includes": [
+        "app/app.vue"
+      ],
       "linter": {
         "rules": {
           "nursery": {

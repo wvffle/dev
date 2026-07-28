@@ -1,6 +1,6 @@
 {
 	"name": "@wvffle/biome-config",
-	"version": "1.0.0",
+	"version": "1.0.2",
 	"description": "Shared Biome configuration (base / vue / nuxt layers).",
 	"license": "MIT",
 	"type": "module",
