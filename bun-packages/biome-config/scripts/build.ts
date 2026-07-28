@@ -58,6 +58,7 @@ export async function build() {
     },
     "types.json": await load("types.jsonc"),
     "project-wide.json": await load("project-wide.jsonc"),
+    "tests.json": { $schema: SCHEMA, linter: (await load("tests.jsonc")).linter },
   };
 
   for (const [name, cfg] of Object.entries(configs)) {

@@ -1,0 +1,334 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  "linter": {
+    "rules": {
+      "suspicious": {
+        //
+        // A describe block should not contain duplicate hooks.
+        // See: https://next.biomejs.dev/linter/rules/no-duplicate-test-hooks/
+        //
+        // ╭╴Invalid:
+        // │ describe('foo', () => {
+        // │   beforeEach(() => {});
+        // │   beforeEach(() => {});  // duplicate
+        // │ });
+        // ╰╴
+        // ╭╴Valid:
+        // │ describe('foo', () => {
+        // │   beforeEach(() => {});
+        // │   test('foo_test', () => {});
+        // │ });
+        // ╰╴
+        "noDuplicateTestHooks": "error",
+        //
+        // Disallow using export or module.exports in files containing tests.
+        // See: https://next.biomejs.dev/linter/rules/no-exports-in-test/
+        //
+        // ╭╴Invalid:
+        // │ export function myHelper() {}
+        // │ describe('a test', () => { expect(1).toBe(1); });
+        // ╰╴
+        // ╭╴Valid:
+        // │ function myHelper() {}
+        // │ describe('a test', () => { expect(1).toBe(1); });
+        // ╰╴
+        "noExportsInTest": "error",
+        //
+        // Disallow focused tests (.only, .skip).
+        // See: https://next.biomejs.dev/linter/rules/no-focused-tests/
+        //
+        // ╭╴Invalid:
+        // │ describe.only("foo", () => {});
+        // │ test.only("bar", () => {});
+        // ╰╴
+        // ╭╴Valid:
+        // │ test("foo", () => {});
+        // ╰╴
+        "noFocusedTests": "error",
+        //
+        // Disallow disabled tests (.skip, .fixme, xdescribe, xit, etc.).
+        // See: https://next.biomejs.dev/linter/rules/no-skipped-tests/
+        //
+        // ╭╴Invalid:
+        // │ describe.skip("test", () => {});
+        // │ test.skip("test", () => {});
+        // │ test.fixme("needs fixing", async () => {});
+        // ╰╴
+        // ╭╴Valid:
+        // │ test("test", () => {});
+        // ╰╴
+        "noSkippedTests": "error"
+      },
+      "complexity": {
+        //
+        // Limit nested describe() depth in test files (default max: 5).
+        // See: https://next.biomejs.dev/linter/rules/no-excessive-nested-test-suites/
+        //
+        // ╭╴Invalid:
+        // │ describe('foo', () => {
+        // │   describe('bar', () => {
+        // │     describe('baz', () => {
+        // │       describe('qux', () => {
+        // │         describe('quxx', () => {
+        // │           describe('too many', () => {});  // 6 levels
+        // │         });
+        // │       });
+        // │     });
+        // │   });
+        // │ });
+        // ╰╴
+        // ╭╴Valid:
+        // │ describe('foo', () => {
+        // │   describe('bar', () => {
+        // │     it('should work', () => {});
+        // │   });
+        // │ });
+        // ╰╴
+        "noExcessiveNestedTestSuites": "error"
+      },
+      "nursery": {
+        //
+        // Disallow `expect` calls inside conditionals in tests.
+        // See: https://next.biomejs.dev/linter/rules/no-conditional-expect/
+        //
+        // ╭╴Invalid:
+        // │ test("conditional expect", async ({ page }) => {
+        // │     if (someCondition) {
+        // │         await expect(page).toHaveTitle("Title");
+        // │     }
+        // │ });
+        // ╰╴
+        // ╭╴Valid:
+        // │ test("unconditional expect", async ({ page }) => {
+        // │     await expect(page).toHaveTitle("Title");
+        // │ });
+        // ╰╴
+        "noConditionalExpect": "error",
+        //
+        // Disallow identical test/suite titles.
+        // See: https://next.biomejs.dev/linter/rules/no-identical-test-title/
+        //
+        // ╭╴Invalid:
+        // │ it('should do bar', () => {});
+        // │ it('should do bar', () => {});
+        // ╰╴
+        // ╭╴Valid:
+        // │ describe('foo', () => {
+        // │   it('should do foo', () => {});
+        // │   it('should do bar', () => {});
+        // │ });
+        // ╰╴
+        "noIdenticalTestTitle": "error",
+        //
+        // Enforce consistent use of `it` vs `test`.
+        // See: https://next.biomejs.dev/linter/rules/use-consistent-test-it/
+        //
+        // ╭╴Invalid:
+        // │ test("foo", () => {});
+        // ╰╴
+        // ╭╴Valid:
+        // │ it("foo", () => {});
+        // ╰╴
+        "useConsistentTestIt": {
+          "level": "error",
+          "options": {
+            "function": "it",
+            "withinDescribe": "it"
+          }
+        },
+        //
+        // Require each test to contain at least one assertion.
+        // See: https://next.biomejs.dev/linter/rules/use-expect/
+        //
+        // ╭╴Invalid:
+        // │ test("no assertion", async ({ page }) => {
+        // │     await page.goto("/");
+        // │     await page.click("button");
+        // │ });
+        // ╰╴
+        // ╭╴Valid:
+        // │ test("has assertion", async ({ page }) => {
+        // │     await page.goto("/");
+        // │     await expect(page).toHaveTitle("Title");
+        // │ });
+        // ╰╴
+        "useExpect": "error",
+        //
+        // Require lifecycle hooks to be declared in execution order.
+        // See: https://next.biomejs.dev/linter/rules/use-test-hooks-in-order/
+        //
+        // ╭╴Invalid:
+        // │ describe('foo', () => {
+        // │   beforeEach(() => {});
+        // │   beforeAll(() => {});
+        // │ });
+        // ╰╴
+        // ╭╴Valid:
+        // │ describe('foo', () => {
+        // │   beforeAll(() => {});
+        // │   beforeEach(() => {});
+        // │   afterEach(() => {});
+        // │   afterAll(() => {});
+        // │ });
+        // ╰╴
+        "useTestHooksInOrder": "error",
+        //
+        // Require lifecycle hooks before test cases in a block.
+        // See: https://next.biomejs.dev/linter/rules/use-test-hooks-on-top/
+        //
+        // ╭╴Invalid:
+        // │ describe('foo', () => {
+        // │   it('does something', () => {});
+        // │   beforeEach(() => {});
+        // │ });
+        // ╰╴
+        // ╭╴Valid:
+        // │ describe('foo', () => {
+        // │   beforeEach(() => {});
+        // │   it('does something', () => {});
+        // │ });
+        // ╰╴
+        "useTestHooksOnTop": "error",
+        //
+        // Disallow usage of element handles (page.$() and page.$$()).
+        // See: https://next.biomejs.dev/linter/rules/no-playwright-element-handle/
+        //
+        // ╭╴Invalid:
+        // │ const button = await page.$('button');
+        // │ const buttons = await page.$$('.btn');
+        // ╰╴
+        // ╭╴Valid:
+        // │ const button = page.locator('button');
+        // │ await button.click();
+        // ╰╴
+        "noPlaywrightElementHandle": "error",
+        //
+        // Disallow usage of page.$eval() and page.$$eval().
+        // See: https://next.biomejs.dev/linter/rules/no-playwright-eval/
+        //
+        // ╭╴Invalid:
+        // │ await page.$eval('.foo', el => el.textContent);
+        // │ const texts = await page.$$eval('.foo', els => els.map(el => el.textContent));
+        // ╰╴
+        // ╭╴Valid:
+        // │ const text = await page.locator('.foo').evaluate(el => el.textContent);
+        // ╰╴
+        "noPlaywrightEval": "error",
+        //
+        // Disallow usage of the { force: true } option.
+        // See: https://next.biomejs.dev/linter/rules/no-playwright-force-option/
+        //
+        // ╭╴Invalid:
+        // │ await page.locator('button').click({ force: true });
+        // ╰╴
+        // ╭╴Valid:
+        // │ await page.locator('button').click();
+        // ╰╴
+        "noPlaywrightForceOption": "error",
+        //
+        // Enforce Playwright async APIs to be awaited or returned.
+        // See: https://next.biomejs.dev/linter/rules/no-playwright-missing-await/
+        //
+        // ╭╴Invalid:
+        // │ test('example', async ({ page }) => {
+        // │     expect(page.getByRole('button')).toBeVisible();
+        // │ });
+        // ╰╴
+        // ╭╴Valid:
+        // │ test('example', async ({ page }) => {
+        // │     await expect(page.getByRole('button')).toBeVisible();
+        // │ });
+        // ╰╴
+        "noPlaywrightMissingAwait": "error",
+        //
+        // Disallow usage of the networkidle option.
+        // See: https://next.biomejs.dev/linter/rules/no-playwright-networkidle/
+        //
+        // ╭╴Invalid:
+        // │ await page.waitForLoadState('networkidle');
+        // │ await page.goto('https://example.com', { waitUntil: 'networkidle' });
+        // ╰╴
+        // ╭╴Valid:
+        // │ await page.waitForLoadState('load');
+        // │ await page.locator('.content').waitFor();
+        // ╰╴
+        "noPlaywrightNetworkidle": "error",
+        //
+        // Disallow using page.pause().
+        // See: https://next.biomejs.dev/linter/rules/no-playwright-page-pause/
+        //
+        // ╭╴Invalid:
+        // │ await page.pause();
+        // ╰╴
+        // ╭╴Valid:
+        // │ await expect(page.locator('.result')).toBeVisible();
+        // ╰╴
+        "noPlaywrightPagePause": "error",
+        //
+        // Disallow unnecessary await for Playwright methods that don't return promises.
+        // See: https://next.biomejs.dev/linter/rules/no-playwright-useless-await/
+        //
+        // ╭╴Invalid:
+        // │ await page.locator('.my-element');
+        // │ await expect(1).toBe(1);
+        // ╰╴
+        // ╭╴Valid:
+        // │ page.locator('.my-element');
+        // │ await page.locator('.my-element').click();
+        // ╰╴
+        "noPlaywrightUselessAwait": "error",
+        //
+        // Disallow using page.waitForNavigation().
+        // See: https://next.biomejs.dev/linter/rules/no-playwright-wait-for-navigation/
+        //
+        // ╭╴Invalid:
+        // │ await page.waitForNavigation();
+        // │ await page.waitForNavigation({ waitUntil: 'networkidle' });
+        // ╰╴
+        // ╭╴Valid:
+        // │ await page.waitForURL('/home');
+        // │ await page.waitForLoadState('networkidle');
+        // ╰╴
+        "noPlaywrightWaitForNavigation": "error",
+        //
+        // Disallow using page.waitForSelector().
+        // See: https://next.biomejs.dev/linter/rules/no-playwright-wait-for-selector/
+        //
+        // ╭╴Invalid:
+        // │ await page.waitForSelector('.submit-button');
+        // ╰╴
+        // ╭╴Valid:
+        // │ await page.locator('.submit-button').click();
+        // │ await expect(page.locator('#dialog')).toBeVisible();
+        // ╰╴
+        "noPlaywrightWaitForSelector": "error",
+        //
+        // Disallow using page.waitForTimeout().
+        // See: https://next.biomejs.dev/linter/rules/no-playwright-wait-for-timeout/
+        //
+        // ╭╴Invalid:
+        // │ await page.waitForTimeout(5000);
+        // ╰╴
+        // ╭╴Valid:
+        // │ await page.waitForLoadState();
+        // │ await page.waitForURL('/home');
+        // ╰╴
+        "noPlaywrightWaitForTimeout": "error",
+        //
+        // Enforce valid describe() callback (sync, no parameters).
+        // See: https://next.biomejs.dev/linter/rules/use-playwright-valid-describe-callback/
+        //
+        // ╭╴Invalid:
+        // │ test.describe('suite', async () => {});
+        // │ test.describe('suite', (done) => {});
+        // ╰╴
+        // ╭╴Valid:
+        // │ test.describe('suite', () => {
+        // │     test('one', async ({ page }) => {});
+        // │ });
+        // ╰╴
+        "usePlaywrightValidDescribeCallback": "error"
+      }
+    }
+  }
+}

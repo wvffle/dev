@@ -81,7 +81,9 @@
 				// │ </script>
 				// ╰╴
 				"useVueConsistentDefinePropsDeclaration": {
-					// FIXME: Broken as of Biome 2.5.5 in TutorPlatform
+					// FIXME: Broken as of Biome 2.5.5 — fires on valid type-based
+					// `defineProps<Props>()` when `defineModel` is also present.
+					// See: https://github.com/biomejs/biome/issues/8682
 					// "level": "error",
 					"level": "off",
 					"options": {
