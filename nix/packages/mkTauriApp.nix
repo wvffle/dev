@@ -52,6 +52,8 @@ let
   cargoArtifacts = attrs.cargoArtifacts or null;
   craneArgs = attrs.craneArgs or {};
   cargoRoot = attrs.cargoRoot or null;
+
+  craneSrc = craneLib.cleanCargoSource (fullCleanSource src);
   isWindows = target == "windows";
   rustPlatform' = if isWindows then pkgsCross.mingwW64.rustPlatform else rustPlatform;
   
@@ -79,7 +81,7 @@ let
     else
       craneLib'.buildDepsOnly {
         inherit lockFile;
-        src = fullCleanSource src;
+        src = craneSrc;
         cargoRoot = actualCargoRoot;
         cargoLock = lockFile;
         strictDeps = true;
@@ -98,7 +100,7 @@ let
     {
       pname = "${tauriConf.productName}-${target}";
       version = tauriConf.version;
-      src = fullCleanSource src;
+      src = craneSrc;
       cargoRoot = actualCargoRoot;
       cargoLock = lockFile;
       strictDeps = true;
@@ -143,7 +145,7 @@ let
     {
       pname = "${tauriConf.productName}-${target}";
       version = tauriConf.version;
-      src = fullCleanSource src;
+      src = craneSrc;
       cargoRoot = actualCargoRoot;
       cargoLock = lockFile;
       strictDeps = true;
