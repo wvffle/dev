@@ -26,7 +26,7 @@
   fetchurl,
   ...
 }:
-{
+attrs@{
   src,
   tauriRoot ? "src-tauri",
   tauriConf ? builtins.fromJSON (builtins.readFile "${src}/${tauriRoot}/tauri.conf.json"),
@@ -47,19 +47,26 @@
     hash = "sha256-8+mw1Dtm+msF0vpN5FR1F6PsC8CxTePDSdgXRlu/erQ=";
   },
   ...
-}@attrs:
+}:
 let
   cargoArtifacts = attrs.cargoArtifacts or null;
   craneArgs = attrs.craneArgs or {};
   cargoRoot = attrs.cargoRoot or null;
 
-  craneSrc = craneLib.cleanCargoSource (fullCleanSource src);
+  craneLib = crane.mkLib pkgs;
+  craneLib' = if target == "windows" then crane.mkLib pkgsCross.mingwW64 else craneLib;
+
+  tauriCargoToml = src + "/" + tauriRoot + "/Cargo.toml";
+  tauriPkgName = craneLib.crateNameFromCargoToml { cargoToml = tauriCargoToml; };
+  tauriVersion = if tauriPkgName ? version then tauriPkgName.version else "";
+  resolvedVersion = if tauriVersion != "" then tauriVersion else tauriConf.version;
+
   isWindows = target == "windows";
   rustPlatform' = if isWindows then pkgsCross.mingwW64.rustPlatform else rustPlatform;
-  
+
   actualCargoRoot = if cargoRoot != null then cargoRoot else src;
 
-  craneLib' = if isWindows then crane.mkLib pkgsCross.mingwW64 else crane.mkLib pkgs;
+  craneSrc = craneLib.cleanCargoSource (fullCleanSource src);
 
   tauriConfig = builtins.toJSON (
     lib.recursiveUpdate tauriConf {
@@ -94,12 +101,10 @@ let
         NIX_CFLAGS_COMPILE = lib.optionalString isWindows "-Wno-error=stringop-overflow";
       };
 
-  craneLib = crane.mkLib pkgs;
-
   mkLinuxBuild = craneLib.mkCargoDerivation (
     {
       pname = "${tauriConf.productName}-${target}";
-      version = tauriConf.version;
+      version = resolvedVersion;
       src = craneSrc;
       cargoRoot = actualCargoRoot;
       cargoLock = lockFile;
@@ -144,7 +149,7 @@ let
   mkWindowsBuild = craneLib'.mkCargoDerivation (
     {
       pname = "${tauriConf.productName}-${target}";
-      version = tauriConf.version;
+      version = resolvedVersion;
       src = craneSrc;
       cargoRoot = actualCargoRoot;
       cargoLock = lockFile;
