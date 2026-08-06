@@ -27,7 +27,8 @@
       fullCleanSource = import ./nix/packages/fullCleanSource.nix {inherit (prev) lib;};
       mkTauriFrontend = prev.callPackage ./nix/packages/mkTauriFrontend.nix {};
       mkTauriApp = prev.callPackage ./nix/packages/mkTauriApp.nix {
-        craneLib = crane.mkLib prev;
+        crane = crane;
+        pkgs = prev;
       };
       mkPnpmPackage = prev.callPackage ./nix/packages/mkPnpmPackage.nix {
         inherit pnpm2nix;

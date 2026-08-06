@@ -4,7 +4,8 @@
   fullCleanSource,
   mkTauriFrontend,
 
-  craneLib,
+  crane,
+  pkgs,
 
   rustPlatform,
 
@@ -56,7 +57,7 @@ let
   tauriSrc = src + "/" + tauriRoot;
   actualCargoRoot = if cargoRoot != null then cargoRoot else tauriSrc;
 
-  craneLib' = if isWindows then craneLib.mkLib pkgsCross.mingwW64 else craneLib;
+  craneLib' = if isWindows then crane.mkLib pkgsCross.mingwW64 else crane.mkLib pkgs;
 
   tauriConfig = builtins.toJSON (
     lib.recursiveUpdate tauriConf {
@@ -91,12 +92,12 @@ let
         NIX_CFLAGS_COMPILE = lib.optionalString isWindows "-Wno-error=stringop-overflow";
       };
 
-  mkLinuxBuild = craneLib.mkCargoDerivation (
+  mkLinuxBuild = crane.mkLib pkgs.mkCargoDerivation (
     {
       pname = "${tauriConf.productName}-${target}";
       version = tauriConf.version;
       src = fullCleanSource src;
-      cargoDeps = craneLib.importCargoLock { inherit lockFile; };
+      cargoDeps = crane.mkLib pkgs.importCargoLock { inherit lockFile; };
       cargoRoot = actualCargoRoot;
       cargoLock = lockFile;
       strictDeps = true;
