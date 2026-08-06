@@ -48,9 +48,9 @@
   ...
 }@attrs:
 let
-  cargoArtifacts = lib.attrByPath ["cargoArtifacts"] null attrs;
-  craneArgs = lib.attrByPath ["craneArgs"] {} attrs;
-  cargoRoot = lib.attrByPath ["cargoRoot"] null attrs;
+  cargoArtifacts = attrs.cargoArtifacts or null;
+  craneArgs = attrs.craneArgs or {};
+  cargoRoot = attrs.cargoRoot or null;
   isWindows = target == "windows";
   rustPlatform' = if isWindows then pkgsCross.mingwW64.rustPlatform else rustPlatform;
   tauriSrc = src + "/" + tauriRoot;
@@ -134,7 +134,7 @@ let
 
       doInstallCargoArtifacts = false;
     }
-    // craneArgs
+    // (lib.removeAttrs craneArgs ["cargoArtifacts"])
   );
 
   mkWindowsBuild = craneLib'.mkCargoDerivation (
@@ -197,7 +197,7 @@ let
 
       doInstallCargoArtifacts = false;
     }
-    // craneArgs
+    // (lib.removeAttrs craneArgs ["cargoArtifacts"])
   );
 
   app = if isWindows then mkWindowsBuild else mkLinuxBuild;
