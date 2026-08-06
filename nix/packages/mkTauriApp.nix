@@ -56,11 +56,7 @@ let
   craneLib = crane.mkLib pkgs;
   craneLib' = if target == "windows" then crane.mkLib pkgsCross.mingwW64 else craneLib;
 
-  tauriCargoToml = src + "/" + tauriRoot + "/Cargo.toml";
-  tauriCargoTomlContents = builtins.readFile tauriCargoToml;
-  tauriPkgName = craneLib.crateNameFromCargoToml { cargoTomlContents = tauriCargoTomlContents; };
-  tauriVersion = if tauriPkgName ? version then tauriPkgName.version else "";
-  resolvedVersion = if tauriVersion != "" then tauriVersion else tauriConf.version;
+   resolvedVersion = tauriConf.version;
 
   isWindows = target == "windows";
 
@@ -90,7 +86,6 @@ let
         cargoRoot = actualCargoRoot;
         cargoLock = lockFile;
         strictDeps = true;
-        cargoTomlContents = tauriCargoTomlContents;
         nativeBuildInputs = [ pkg-config ];
         buildInputs = lib.optionals (!isWindows) [
           openssl
@@ -108,7 +103,6 @@ let
       cargoRoot = actualCargoRoot;
       cargoLock = lockFile;
       strictDeps = true;
-      cargoTomlContents = tauriCargoTomlContents;
 
       nativeBuildInputs = [
         cargo-tauri.hook
@@ -154,7 +148,6 @@ let
       cargoRoot = actualCargoRoot;
       cargoLock = lockFile;
       strictDeps = true;
-      cargoTomlContents = tauriCargoTomlContents;
 
       nativeBuildInputs = [
         pkg-config
