@@ -92,12 +92,14 @@ let
         NIX_CFLAGS_COMPILE = lib.optionalString isWindows "-Wno-error=stringop-overflow";
       };
 
-  mkLinuxBuild = crane.mkLib pkgs.mkCargoDerivation (
+  craneLib = crane.mkLib pkgs;
+
+  mkLinuxBuild = craneLib.mkCargoDerivation (
     {
       pname = "${tauriConf.productName}-${target}";
       version = tauriConf.version;
       src = fullCleanSource src;
-      cargoDeps = crane.mkLib pkgs.importCargoLock { inherit lockFile; };
+      cargoDeps = craneLib.importCargoLock { inherit lockFile; };
       cargoRoot = actualCargoRoot;
       cargoLock = lockFile;
       strictDeps = true;
