@@ -45,12 +45,12 @@
     version = "0.5.2";
     hash = "sha256-8+mw1Dtm+msF0vpN5FR1F6PsC8CxTePDSdgXRlu/erQ=";
   },
-  cargoArtifacts ? null,
-  craneArgs ? {},
-  cargoRoot ? null,
   ...
 }@attrs:
 let
+  cargoArtifacts = lib.attrByPath ["cargoArtifacts"] null attrs;
+  craneArgs = lib.attrByPath ["craneArgs"] {} attrs;
+  cargoRoot = lib.attrByPath ["cargoRoot"] null attrs;
   isWindows = target == "windows";
   rustPlatform' = if isWindows then pkgsCross.mingwW64.rustPlatform else rustPlatform;
   tauriSrc = src + "/" + tauriRoot;
