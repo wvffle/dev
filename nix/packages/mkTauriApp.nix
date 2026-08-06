@@ -99,7 +99,6 @@ let
       pname = "${tauriConf.productName}-${target}";
       version = tauriConf.version;
       src = fullCleanSource src;
-      cargoDeps = craneLib.importCargoLock { inherit lockFile; };
       cargoRoot = actualCargoRoot;
       cargoLock = lockFile;
       strictDeps = true;
@@ -145,7 +144,6 @@ let
       pname = "${tauriConf.productName}-${target}";
       version = tauriConf.version;
       src = fullCleanSource src;
-      cargoDeps = craneLib'.importCargoLock { inherit lockFile; };
       cargoRoot = actualCargoRoot;
       cargoLock = lockFile;
       strictDeps = true;
