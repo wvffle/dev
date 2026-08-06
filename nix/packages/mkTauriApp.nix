@@ -113,7 +113,7 @@ let
         glib-networking
       ];
 
-      inherit resolvedCargoArtifacts;
+      cargoArtifacts = resolvedCargoArtifacts;
 
       TAURI_CONFIG = tauriConfig;
       CARGO_TARGET_DIR = "$PWD/target";
@@ -162,7 +162,7 @@ let
         glib-networking
       ];
 
-      inherit resolvedCargoArtifacts;
+      cargoArtifacts = resolvedCargoArtifacts;
 
       CARGO_TARGET_DIR = "$PWD/target";
 
