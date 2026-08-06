@@ -53,7 +53,8 @@
 let
   isWindows = target == "windows";
   rustPlatform' = if isWindows then pkgsCross.mingwW64.rustPlatform else rustPlatform;
-  actualCargoRoot = if cargoRoot != null then cargoRoot else tauriRoot;
+  tauriSrc = src + "/" + tauriRoot;
+  actualCargoRoot = if cargoRoot != null then cargoRoot else tauriSrc;
 
   craneLib' = if isWindows then craneLib.mkLib pkgsCross.mingwW64 else craneLib;
 
