@@ -3,11 +3,13 @@
     nixpkgs.url = "github:cachix/devenv-nixpkgs/rolling";
     pnpm2nix.url = "github:FliegendeWurst/pnpm2nix-nzbr";
     pnpm2nix.inputs.nixpkgs.follows = "nixpkgs";
+    crane.url = "github:ipetkov/crane";
   };
 
   outputs = {
     nixpkgs,
     pnpm2nix,
+    crane,
     ...
   }: let
     forAllSystems = with nixpkgs.lib; (genAttrs systems.flakeExposed);
@@ -24,7 +26,9 @@
     overlays.default = final: prev: {
       fullCleanSource = import ./nix/packages/fullCleanSource.nix {inherit (prev) lib;};
       mkTauriFrontend = prev.callPackage ./nix/packages/mkTauriFrontend.nix {};
-      mkTauriApp = prev.callPackage ./nix/packages/mkTauriApp.nix {};
+      mkTauriApp = prev.callPackage ./nix/packages/mkTauriApp.nix {
+        craneLib = crane.mkLib prev;
+      };
       mkPnpmPackage = prev.callPackage ./nix/packages/mkPnpmPackage.nix {
         inherit pnpm2nix;
       };
