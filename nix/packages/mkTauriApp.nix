@@ -202,13 +202,4 @@ let
 
   app = if isWindows then mkWindowsBuild else mkLinuxBuild;
 in
-rustPlatform'.buildRustPackage (
-  lib.recursiveUpdate {
-    inherit app;
-    buildCommand = # bash
-      ''
-        cp -r ${app}/. $out
-      '';
-    passthru = { inherit attrs; };
-  } attrs
-)
+lib.recursiveUpdate app { passthru = lib.recursiveUpdate (app.passthru or { }) { inherit attrs; }; }
