@@ -62,11 +62,8 @@ let
   resolvedVersion = if tauriVersion != "" then tauriVersion else tauriConf.version;
 
   isWindows = target == "windows";
-  rustPlatform' = if isWindows then pkgsCross.mingwW64.rustPlatform else rustPlatform;
 
   actualCargoRoot = if cargoRoot != null then cargoRoot else src;
-
-  craneSrc = craneLib.cleanCargoSource (fullCleanSource src);
 
   tauriConfig = builtins.toJSON (
     lib.recursiveUpdate tauriConf {
@@ -88,10 +85,11 @@ let
     else
       craneLib'.buildDepsOnly {
         inherit lockFile;
-        src = craneSrc;
+        src = fullCleanSource src;
         cargoRoot = actualCargoRoot;
         cargoLock = lockFile;
         strictDeps = true;
+        cargoToml = tauriCargoToml;
         nativeBuildInputs = [ pkg-config ];
         buildInputs = lib.optionals (!isWindows) [
           openssl
@@ -105,10 +103,11 @@ let
     {
       pname = "${tauriConf.productName}-${target}";
       version = resolvedVersion;
-      src = craneSrc;
+      src = fullCleanSource src;
       cargoRoot = actualCargoRoot;
       cargoLock = lockFile;
       strictDeps = true;
+      cargoToml = tauriCargoToml;
 
       nativeBuildInputs = [
         cargo-tauri.hook
@@ -150,10 +149,11 @@ let
     {
       pname = "${tauriConf.productName}-${target}";
       version = resolvedVersion;
-      src = craneSrc;
+      src = fullCleanSource src;
       cargoRoot = actualCargoRoot;
       cargoLock = lockFile;
       strictDeps = true;
+      cargoToml = tauriCargoToml;
 
       nativeBuildInputs = [
         pkg-config
