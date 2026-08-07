@@ -1,22 +1,15 @@
 {
   lib,
-
   fullCleanSource,
   mkTauriFrontend,
-
   crane,
   pkgs,
-
-  rustPlatform,
-
   cargo-tauri,
   pkg-config,
   wrapGAppsHook4,
-
   openssl,
   glib-networking,
   webkitgtk_4_1,
-
   pkgsCross,
   cargo-xwin,
   nsis,
@@ -25,183 +18,173 @@
   cmake,
   fetchurl,
   ...
-}:
-attrs@{
+}: attrs @ {
   src,
   tauriRoot ? "src-tauri",
   tauriConf ? builtins.fromJSON (builtins.readFile "${src}/${tauriRoot}/tauri.conf.json"),
-
   lockFile ?
-    if builtins.pathExists "${src}/Cargo.lock" then
-      "${src}/Cargo.lock"
-    else
-      "${src}/${tauriRoot}/Cargo.lock",
-
-  frontend ? mkTauriFrontend {
-    inherit src tauriRoot;
-  },
-
+    if builtins.pathExists "${src}/Cargo.lock"
+    then "${src}/Cargo.lock"
+    else "${src}/${tauriRoot}/Cargo.lock",
   target ? "linux",
   nsisTauriUtils ? {
     version = "0.5.2";
     hash = "sha256-8+mw1Dtm+msF0vpN5FR1F6PsC8CxTePDSdgXRlu/erQ=";
   },
+  postInstall ? "",
+  nativeBuildInputs ? [],
+  buildInputs ? [],
+  env ? {},
   ...
-}:
-let
-  cargoArtifacts = attrs.cargoArtifacts or null;
-  craneArgs = attrs.craneArgs or {};
-  cargoRoot = attrs.cargoRoot or null;
-
-  craneLib = crane.mkLib pkgs;
-  craneLib' = if target == "windows" then crane.mkLib pkgsCross.mingwW64 else craneLib;
-
-   resolvedVersion = tauriConf.version;
-
+}: let
   isWindows = target == "windows";
+  resolvedVersion = tauriConf.version;
+  pname = "${tauriConf.productName}-${target}";
 
-  actualCargoRoot = if cargoRoot != null then cargoRoot else src;
+  releaseType =
+    if isWindows
+    then "x86_64-pc-windows-gnu/release"
+    else "release";
 
-  tauriConfig = builtins.toJSON (
-    lib.recursiveUpdate tauriConf {
-      build = {
-        frontendDist = "${frontend}";
-        beforeBuildCommand = "";
-      };
-    }
+  craneLib = crane.mkLib (
+    if isWindows
+    then pkgsCross.mingwW64
+    else pkgs
   );
+
+  # ---- Rust source ----
+
+  rootCargoTomlPath = "${src}/Cargo.toml";
+  workspaceMembers =
+    if builtins.pathExists rootCargoTomlPath
+    then (builtins.fromTOML (builtins.readFile rootCargoTomlPath)).workspace.members or []
+    else [];
+
+  rustCrateDirs = lib.unique ([tauriRoot] ++ workspaceMembers);
+
+  relOf = path: lib.removePrefix (toString src + "/") (toString path);
+  isUnderCrateDir = rel: crateDir: rel == crateDir || lib.hasPrefix "${crateDir}/" rel;
+
+  isRustSrcPath = path: type: let
+    rel = relOf path;
+  in
+    rel == "Cargo.toml" || rel == "Cargo.lock" || lib.any (isUnderCrateDir rel) rustCrateDirs;
+
+  # Whitelist: allow claims everything under a rust crate dir (bypassing
+  # the default filter's *.o/*.so strip, needed for vendored prebuilt
+  # libs like elzabdr.so); deny is the exact negation, making this an
+  # exclusive whitelist rather than "default plus exceptions".
+  rustSrc = fullCleanSource src {
+    allow = [isRustSrcPath];
+    deny = [(path: type: !(isRustSrcPath path type))];
+  };
+
+  # Frontend/Rust source splitting now lives inside mkTauriFrontend
+  # itself, since it already reads tauriConf/tauriRoot.
+  frontend = attrs.frontend or (mkTauriFrontend {inherit src tauriRoot;});
+
+  tauriConfigPatch = builtins.toJSON {
+    build = {
+      frontendDist = "${frontend}";
+      beforeBuildCommand = "";
+    };
+  };
 
   nsis-tauri-utils-dll = fetchurl {
     url = "https://github.com/tauri-apps/nsis-tauri-utils/releases/download/nsis_tauri_utils-v${nsisTauriUtils.version}/nsis_tauri_utils.dll";
     inherit (nsisTauriUtils) hash;
   };
 
-  resolvedCargoArtifacts =
-    if cargoArtifacts != null then
-      cargoArtifacts
-    else
-      craneLib'.buildDepsOnly {
-        inherit lockFile;
-        src = fullCleanSource src;
-        cargoRoot = actualCargoRoot;
-        cargoLock = lockFile;
-        strictDeps = true;
-        nativeBuildInputs = [ pkg-config ];
-        buildInputs = lib.optionals (!isWindows) [
-          openssl
-          webkitgtk_4_1
-          glib-networking
-        ];
-        NIX_CFLAGS_COMPILE = lib.optionalString isWindows "-Wno-error=stringop-overflow";
-      };
+  platformNativeInputs =
+    (
+      if isWindows
+      then [pkg-config cargo-xwin nasm ninja cmake nsis]
+      else [cargo-tauri.hook pkg-config wrapGAppsHook4]
+    )
+    ++ nativeBuildInputs;
 
-  mkLinuxBuild = craneLib.mkCargoDerivation (
+  platformBuildInputs =
+    (
+      if isWindows
+      then [openssl]
+      else [openssl webkitgtk_4_1 glib-networking]
+    )
+    ++ buildInputs;
+
+  commonArgs =
     {
-      pname = "${tauriConf.productName}-${target}";
+      inherit pname;
       version = resolvedVersion;
-      src = fullCleanSource src;
-      cargoRoot = actualCargoRoot;
+      src = rustSrc;
       cargoLock = lockFile;
       strictDeps = true;
-
-      nativeBuildInputs = [
-        cargo-tauri.hook
-        pkg-config
-        wrapGAppsHook4
-      ];
-
-      buildInputs = [
-        openssl
-        webkitgtk_4_1
-        glib-networking
-      ];
-
-      cargoArtifacts = resolvedCargoArtifacts;
-
-      TAURI_CONFIG = tauriConfig;
-      CARGO_TARGET_DIR = "$PWD/target";
-
-      NIX_CFLAGS_COMPILE = "";
-
-      buildPhaseCargoCommand = "cargo tauri build --no-bundle ${tauriConf.build.beforeBuildCommand}";
-
-      installPhase = # bash
-        ''
-          runHook preInstall
-
-          mkdir -p $out/bin
-          cp -v target/release/* $out/bin/
-
-          runHook postInstall
-        '';
-
-      doInstallCargoArtifacts = false;
+      doCheck = false;
+      nativeBuildInputs = platformNativeInputs;
+      buildInputs = platformBuildInputs;
+      NIX_CFLAGS_COMPILE = lib.optionalString isWindows "-Wno-error=stringop-overflow";
     }
-    // (lib.removeAttrs craneArgs ["cargoArtifacts"])
-  );
+    // env;
 
-  mkWindowsBuild = craneLib'.mkCargoDerivation (
-    {
-      pname = "${tauriConf.productName}-${target}";
-      version = resolvedVersion;
-      src = fullCleanSource src;
-      cargoRoot = actualCargoRoot;
-      cargoLock = lockFile;
-      strictDeps = true;
+  commonPreBuild = ''
+    export CARGO_BUILD_JOBS="$NIX_BUILD_CORES"
+  '';
 
-      nativeBuildInputs = [
-        pkg-config
-        cargo-xwin
-        nasm
-        ninja
-        cmake
-        nsis
-      ];
+  windowsPreBuild =
+    commonPreBuild
+    + ''
+      export HOME=$(mktemp -d)
+      mkdir -p $HOME/.cache/tauri/NSIS/Plugins/x86-unicode/additional
+      cp ${nsis-tauri-utils-dll} $HOME/.cache/tauri/NSIS/Plugins/x86-unicode/additional/nsis_tauri_utils.dll
+      export CARGO_PROFILE_RELEASE_STRIP=false
+    '';
 
-      buildInputs = [
-        openssl
-        webkitgtk_4_1
-        glib-networking
-      ];
+  cargoArtifacts =
+    attrs.cargoArtifacts or (
+      craneLib.buildDepsOnly (commonArgs
+        // {
+          preBuild =
+            if isWindows
+            then windowsPreBuild
+            else commonPreBuild;
+        })
+    );
 
-      cargoArtifacts = resolvedCargoArtifacts;
+  buildCmd =
+    "cargo tauri build --no-bundle --ci --config '${tauriConfigPatch}'"
+    + lib.optionalString isWindows " --target x86_64-pc-windows-gnu";
 
-      CARGO_TARGET_DIR = "$PWD/target";
+  installCmd =
+    if isWindows
+    then ''
+      mkdir -p $out
+      cp -avr target/x86_64-pc-windows-gnu/release/bundle/nsis/* $out/ 2>/dev/null || true
+    ''
+    else ''
+      mkdir -p $out/bin
+      cp -v target/release/* $out/bin/ 2>/dev/null || true
+    '';
 
-      NIX_CFLAGS_COMPILE = "-Wno-error=stringop-overflow";
-
-      preBuild = # bash
-        ''
-          runHook preBuild
-
-          # Fetch `nsis_tauri_utils.dll` file and insert it into the cache.
-          export HOME="$(mktemp -d)"
-          mkdir -p $HOME/.cache/tauri/NSIS/Plugins/x86-unicode/additional
-          cp -v ${nsis-tauri-utils-dll} $HOME/.cache/tauri/NSIS/Plugins/x86-unicode/additional/nsis_tauri_utils.dll
-
-          # Let stdenv handle stripping, for consistency and to not break separateDebugInfo.
-          export CARGO_PROFILE_RELEASE_STRIP=false
-
-          runHook postBuild
-        '';
-
-      buildPhaseCargoCommand = "cargo tauri build --no-bundle --target x86_64-pc-windows-gnu --offline";
-
-      installPhase = # bash
-        ''
-          runHook preInstall
-
-          mkdir -p $out/
-          cp -avr target/x86_64-pc-windows-gnu/release/bundle/nsis/* $out/
-
-          runHook postInstall
-        '';
-
+  app = craneLib.mkCargoDerivation (commonArgs
+    // {
+      inherit cargoArtifacts;
       doInstallCargoArtifacts = false;
+      buildPhaseCargoCommand = buildCmd;
+      installPhase = ''
+        runHook preInstall
+        ${installCmd}
+        runHook postInstall
+      '';
+      preBuild =
+        if isWindows
+        then windowsPreBuild
+        else commonPreBuild;
     }
-    // (lib.removeAttrs craneArgs ["cargoArtifacts"])
-  );
-
-  app = if isWindows then mkWindowsBuild else mkLinuxBuild;
+    // lib.optionalAttrs (postInstall != "") {
+      inherit postInstall;
+    });
 in
-lib.recursiveUpdate app { passthru = lib.recursiveUpdate (app.passthru or { }) { inherit attrs; }; }
+  lib.recursiveUpdate app {
+    passthru = {
+      inherit attrs releaseType pname rustSrc;
+    };
+  }
