@@ -27,9 +27,10 @@
     then "${src}/Cargo.lock"
     else "${src}/${tauriRoot}/Cargo.lock",
   target ? "linux",
+  updater ? {enable = false;},
   nsisTauriUtils ? {
-    version = "0.5.2";
-    hash = "sha256-8+mw1Dtm+msF0vpN5FR1F6PsC8CxTePDSdgXRlu/erQ=";
+    version = "0.5.3";
+    hash = "sha256-W6FDtdtKh9MtbngC4DMzCq5Wy86r4NHjukGUg4WtRwk=";
   },
   postInstall ? "",
   nativeBuildInputs ? [],
@@ -38,6 +39,7 @@
   ...
 }: let
   isWindows = target == "windows";
+  isLinux = target == "linux";
   resolvedVersion = tauriConf.version;
   pname = "${tauriConf.productName}-${target}";
 
@@ -83,12 +85,21 @@
   # itself, since it already reads tauriConf/tauriRoot.
   frontend = attrs.frontend or (mkTauriFrontend {inherit src tauriRoot;});
 
-  tauriConfigPatch = builtins.toJSON {
-    build = {
-      frontendDist = "${frontend}";
-      beforeBuildCommand = "";
-    };
-  };
+  tauriConfigPatch = builtins.toJSON ({
+      build = {
+        frontendDist = "${frontend}";
+        beforeBuildCommand = "";
+      };
+    }
+    // (lib.optionalAttrs updater.enable {
+      plugins.updater.endpoints = updater.endpoints;
+      plugins.updater.pubkey = updater.publicKey;
+      bundle.createUpdaterArtifacts = true;
+    })
+    // (lib.optionalAttrs isWindows {
+      bundle.active = true;
+      bundle.targets = "nsis";
+    }));
 
   nsis-tauri-utils-dll = fetchurl {
     url = "https://github.com/tauri-apps/nsis-tauri-utils/releases/download/nsis_tauri_utils-v${nsisTauriUtils.version}/nsis_tauri_utils.dll";
@@ -98,7 +109,7 @@
   platformNativeInputs =
     (
       if isWindows
-      then [pkg-config cargo-xwin nasm ninja cmake nsis]
+      then [cargo-tauri pkg-config cargo-xwin nasm ninja cmake nsis]
       else [cargo-tauri.hook pkg-config wrapGAppsHook4]
     )
     ++ nativeBuildInputs;
@@ -123,7 +134,11 @@
       buildInputs = platformBuildInputs;
       NIX_CFLAGS_COMPILE = lib.optionalString isWindows "-Wno-error=stringop-overflow";
     }
-    // env;
+    // env
+    // lib.optionalAttrs updater.enable {
+      TAURI_SIGNING_PRIVATE_KEY = updater.privateKey;
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD = updater.privateKeyPassword;
+    };
 
   commonPreBuild = ''
     export CARGO_BUILD_JOBS="$NIX_BUILD_CORES"
@@ -150,8 +165,9 @@
     );
 
   buildCmd =
-    "cargo tauri build --no-bundle --ci --config '${tauriConfigPatch}'"
-    + lib.optionalString isWindows " --target x86_64-pc-windows-gnu";
+    "cargo tauri build --ci --config '${tauriConfigPatch}'"
+    + lib.optionalString isWindows " --runner cargo-xwin --target x86_64-pc-windows-gnu"
+    + lib.optionalString isLinux " --no-bundle";
 
   installCmd =
     if isWindows
