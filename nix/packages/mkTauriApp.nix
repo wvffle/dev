@@ -85,21 +85,23 @@
   # itself, since it already reads tauriConf/tauriRoot.
   frontend = attrs.frontend or (mkTauriFrontend {inherit src tauriRoot;});
 
-  tauriConfigPatch = builtins.toJSON ({
+  tauriConfigPatch = builtins.toJSON (lib.foldl' lib.recursiveUpdate {} [
+    {
       build = {
         frontendDist = "${frontend}";
         beforeBuildCommand = "";
       };
     }
-    // (lib.optionalAttrs updater.enable {
+    (lib.optionalAttrs updater.enable {
       plugins.updater.endpoints = updater.endpoints;
       plugins.updater.pubkey = updater.publicKey;
       bundle.createUpdaterArtifacts = true;
     })
-    // (lib.optionalAttrs isWindows {
+    (lib.optionalAttrs isWindows {
       bundle.active = true;
       bundle.targets = "nsis";
-    }));
+    })
+  ]);
 
   nsis-tauri-utils-dll = fetchurl {
     url = "https://github.com/tauri-apps/nsis-tauri-utils/releases/download/nsis_tauri_utils-v${nsisTauriUtils.version}/nsis_tauri_utils.dll";
