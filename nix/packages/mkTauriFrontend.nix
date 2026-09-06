@@ -81,6 +81,12 @@ in
       deny = [(path: type: !(isFrontendSrcPath path type))];
     };
 
-    scriptFull = tauriConf.build.beforeBuildCommand;
+    # beforeBuildCommand is authored assuming CWD is the frontend project
+    # itself (as it would be if you `cd apps/desktop && cargo tauri build`
+    # normally) - pnpm2nix's plain `scriptFull` otherwise runs it verbatim
+    # at src's root, which in a monorepo is the wrong directory (e.g. its
+    # package.json has no matching script at all, or pnpm's workspace-root
+    # script fallback recurses into unrelated packages instead).
+    scriptFull = "cd ${frontendRoot} && ${tauriConf.build.beforeBuildCommand}";
     distDir = "${tauriRoot}/${tauriConf.build.frontendDist}";
   }
