@@ -371,6 +371,13 @@
       nativeBuildInputs = platformNativeInputs;
       buildInputs = platformBuildInputs;
       NIX_CFLAGS_COMPILE = lib.optionalString isWindows "-Wno-error=stringop-overflow";
+      # Scopes crane's own cargo invocations (buildDepsOnly's `cargo check`
+      # in particular) to just the tauri package, instead of the whole
+      # workspace's default members - otherwise unrelated sibling crates
+      # (other apps, test-only crates with their own heavy/incompatible
+      # dependencies) get needlessly resolved and built too. `cargo tauri
+      # build` below already targets the app on its own and ignores this.
+      cargoExtraArgs = "-p ${tauriCargoToml.package.name}";
     }
     // env
     // lib.optionalAttrs updater.enable {
