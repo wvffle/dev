@@ -41,6 +41,10 @@
   nativeBuildInputs ? [],
   buildInputs ? [],
   env ? {},
+  # Forwarded to mkTauriFrontend to scope its source in a monorepo; see
+  # its docs for defaults/semantics.
+  frontendRoot ? builtins.dirOf tauriRoot,
+  extraSrcPaths ? [],
   ...
 }: let
   isWindows = target == "windows";
@@ -127,7 +131,7 @@
   # itself, since it already reads tauriConf/tauriRoot.
   frontend =
     attrs.frontend or (mkTauriFrontend {
-      inherit src tauriRoot;
+      inherit src tauriRoot frontendRoot extraSrcPaths;
       version = resolvedVersion;
     });
 
