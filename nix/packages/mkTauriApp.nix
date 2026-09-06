@@ -108,24 +108,154 @@
     then rootCargoToml.workspace.members or []
     else [];
 
-  rustCrateDirs = lib.unique ([tauriRoot] ++ workspaceMembers);
-
   relOf = path: lib.removePrefix (toString src + "/") (toString path);
   isUnderCrateDir = rel: crateDir: rel == crateDir || lib.hasPrefix "${crateDir}/" rel;
+
+  splitPath = p: lib.filter (s: s != "" && s != ".") (lib.splitString "/" p);
+  joinPath = parts: lib.concatStringsSep "/" parts;
+
+  # Resolve a Cargo.toml `path = "..."` value written in `fromDir` (a crate
+  # dir relative to src) into a path relative to src, collapsing ".."
+  # segments (string paths can't rely on Nix's own path normalization).
+  resolveRelPath = fromDir: rel: let
+    base = splitPath fromDir;
+    parts = splitPath rel;
+    go = acc: remaining:
+      if remaining == []
+      then acc
+      else let
+        p = builtins.head remaining;
+        rest = builtins.tail remaining;
+      in
+        if p == ".."
+        then go (if acc == [] then acc else lib.init acc) rest
+        else go (acc ++ [p]) rest;
+  in
+    joinPath (go base parts);
+
+  workspaceDependencies = rootCargoToml.workspace.dependencies or {};
+
+  depTablesOf = cargoToml: let
+    targetTables = builtins.attrValues (cargoToml.target or {});
+    fromTarget =
+      lib.concatMap (t: [
+        (t.dependencies or {})
+        (t.dev-dependencies or {})
+        (t.build-dependencies or {})
+      ])
+      targetTables;
+  in
+    [
+      (cargoToml.dependencies or {})
+      (cargoToml.dev-dependencies or {})
+      (cargoToml.build-dependencies or {})
+    ]
+    ++ fromTarget;
+
+  # Local path dependencies declared by the crate at `crateDir`. A direct
+  # `{ path = ... }` spec is relative to crateDir; a `{ workspace = true }`
+  # spec instead points at [workspace.dependencies] in the root Cargo.toml,
+  # whose `path` is relative to the workspace root - the two need
+  # different bases when resolving ".." segments.
+  localPathDepsOf = crateDir: let
+    cargoTomlPath = "${src}/${crateDir}/Cargo.toml";
+    cargoToml =
+      if builtins.pathExists cargoTomlPath
+      then builtins.fromTOML (builtins.readFile cargoTomlPath)
+      else {};
+    tables = depTablesOf cargoToml;
+
+    directPathsIn = table:
+      lib.filter (p: p != null) (map (
+        spec:
+          if builtins.isAttrs spec && spec ? path
+          then resolveRelPath crateDir spec.path
+          else null
+      ) (builtins.attrValues table));
+
+    workspaceInheritedPathsIn = table:
+      lib.filter (p: p != null) (map (
+        name: let
+          spec = table.${name};
+          wsSpec = workspaceDependencies.${name} or {};
+        in
+          if builtins.isAttrs spec && (spec.workspace or false) == true && wsSpec ? path
+          then resolveRelPath "." wsSpec.path
+          else null
+      ) (builtins.attrNames table));
+  in
+    lib.concatMap directPathsIn tables ++ lib.concatMap workspaceInheritedPathsIn tables;
+
+  # Full Rust source is only needed for tauriRoot and the crates it
+  # actually (transitively) depends on via a local path - not every crate
+  # in a large monorepo-wide workspace. Other workspace members still need
+  # their Cargo.toml present (Cargo eagerly parses every listed member's
+  # manifest to resolve the workspace/lockfile even if it isn't built),
+  # just not their full source.
+  rustClosure = let
+    step = acc: let
+      discovered = lib.unique (lib.concatMap localPathDepsOf acc);
+      combined = lib.unique (acc ++ discovered);
+    in
+      if combined == acc
+      then acc
+      else step combined;
+  in
+    step [tauriRoot];
+
+  manifestOnlyCrateDirs = lib.subtractLists rustClosure workspaceMembers;
+  manifestOnlyPaths = map (dir: "${dir}/Cargo.toml") manifestOnlyCrateDirs;
+
+  # Ancestor directories of every kept path must also pass the filter -
+  # fullCleanSource/cleanSourceWith won't recurse into a directory whose
+  # own filter call returns false, so e.g. "crates" and "crates/unused-lib"
+  # must still be allowed purely for traversal even though only
+  # crates/unused-lib/Cargo.toml (not its full source) is actually kept.
+  allowRootPaths = ["Cargo.toml" "Cargo.lock"] ++ rustClosure ++ manifestOnlyPaths;
+  isAncestorOfAllowRoot = rel: lib.any (t: lib.hasPrefix "${rel}/" t) allowRootPaths;
 
   isRustSrcPath = path: type: let
     rel = relOf path;
   in
-    rel == "Cargo.toml" || rel == "Cargo.lock" || lib.any (isUnderCrateDir rel) rustCrateDirs;
+    rel == "Cargo.toml"
+    || rel == "Cargo.lock"
+    || lib.any (isUnderCrateDir rel) rustClosure
+    || lib.elem rel manifestOnlyPaths
+    || isAncestorOfAllowRoot rel;
 
   # Whitelist: allow claims everything under a rust crate dir (bypassing
   # the default filter's *.o/*.so strip, needed for vendored prebuilt
   # libs like elzabdr.so); deny is the exact negation, making this an
   # exclusive whitelist rather than "default plus exceptions".
-  rustSrc = fullCleanSource src {
+  filteredRustSrc = fullCleanSource src {
     allow = [isRustSrcPath];
     deny = [(path: type: !(isRustSrcPath path type))];
   };
+
+  # A manifest-only crate's Cargo.toml is present (Cargo needs it to
+  # resolve the workspace) but it has no source, and Cargo hard-errors
+  # parsing a manifest with zero targets ("no targets specified ... either
+  # src/lib.rs, src/main.rs, a [lib] section, or [[bin]] section must be
+  # present"). Since nothing in rustClosure depends on these crates, they
+  # never actually get compiled - stub content that merely satisfies target
+  # discovery is enough (same technique cargo-chef uses for Docker layer
+  # caching). This doesn't handle a manifest-only crate with an *explicit*
+  # non-default target path (e.g. `[lib] path = "src/custom.rs"`); that
+  # would need a matching stub at that exact path instead.
+  rustSrc =
+    if manifestOnlyCrateDirs == []
+    then filteredRustSrc
+    else
+      pkgs.runCommand "rust-src-with-stubs" {} ''
+        cp -r ${filteredRustSrc} $out
+        chmod -R u+w $out
+        ${lib.concatMapStringsSep "\n" (dir: ''
+            mkdir -p "$out/${dir}/src"
+            : > "$out/${dir}/src/lib.rs"
+            printf 'fn main() {}\n' > "$out/${dir}/src/main.rs"
+          '')
+          manifestOnlyCrateDirs}
+      '';
 
   # Frontend/Rust source splitting now lives inside mkTauriFrontend
   # itself, since it already reads tauriConf/tauriRoot.
