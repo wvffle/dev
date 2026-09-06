@@ -22,8 +22,11 @@
   src,
   tauriRoot ? "src-tauri",
   tauriConf ? builtins.fromJSON (builtins.readFile "${src}/${tauriRoot}/tauri.conf.json"),
-  # Required when tauri.conf.json has no version; used as the package version.
-  version,
+  # Last-resort version fallback, used only when tauri.conf.json omits
+  # version and it can't be resolved from ${tauriRoot}/Cargo.toml either
+  # (directly, or via `version.workspace = true` pointing at the root
+  # Cargo.toml's [workspace.package].version).
+  version ? null,
   lockFile ?
     if builtins.pathExists "${src}/Cargo.lock"
     then "${src}/Cargo.lock"
@@ -45,13 +48,36 @@
 
   isNonEmptyVersion = v: v != null && v != "" && v != true;
 
-  # Prefer tauriConf.version; when tauri.conf.json omits it, fall back to
-  # the required `version` argument (the caller must supply it) rather than
-  # deriving the version from Cargo.
+  # Tauri itself falls back to the package Cargo.toml's version when
+  # tauri.conf.json omits it, and that version may in turn be inherited
+  # from the workspace via `version.workspace = true` (parsed as the
+  # table { workspace = true; }). Both Cargo.toml reads stay inside `src`
+  # (no walking above it, which doesn't work: `src` is a Nix store path
+  # containing only the given subtree, so a parent directory outside it
+  # isn't the real workspace root even if one exists on disk).
+  tauriCargoTomlPath = "${src}/${tauriRoot}/Cargo.toml";
+  tauriCargoToml =
+    if builtins.pathExists tauriCargoTomlPath
+    then builtins.fromTOML (builtins.readFile tauriCargoTomlPath)
+    else {};
+  cargoPkgVersion = tauriCargoToml.package.version or null;
+  cargoPkgVersionIsWorkspaceInherit =
+    builtins.isAttrs cargoPkgVersion && (cargoPkgVersion.workspace or false) == true;
+  cargoResolvedVersion =
+    if cargoPkgVersionIsWorkspaceInherit
+    then rootCargoToml.workspace.package.version or null
+    else cargoPkgVersion;
+
+  # Prefer tauriConf.version, then the (possibly workspace-inherited) Cargo
+  # version, then the explicit `version` argument as a last resort.
   resolvedVersion =
     if tauriConf ? version && isNonEmptyVersion tauriConf.version
     then toString tauriConf.version
-    else version;
+    else if isNonEmptyVersion cargoResolvedVersion
+    then toString cargoResolvedVersion
+    else if isNonEmptyVersion version
+    then toString version
+    else throw "mkTauriApp: could not resolve a version from tauri.conf.json, ${tauriRoot}/Cargo.toml (including workspace.package.version), or an explicit `version` argument";
 
   pname = "${tauriConf.productName}-${target}";
 
@@ -99,7 +125,11 @@
 
   # Frontend/Rust source splitting now lives inside mkTauriFrontend
   # itself, since it already reads tauriConf/tauriRoot.
-  frontend = attrs.frontend or (mkTauriFrontend {inherit src tauriRoot;});
+  frontend =
+    attrs.frontend or (mkTauriFrontend {
+      inherit src tauriRoot;
+      version = resolvedVersion;
+    });
 
   tauriConfigPatch = builtins.toJSON (lib.foldl' lib.recursiveUpdate {} [
     {

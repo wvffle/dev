@@ -7,7 +7,11 @@
   src,
   tauriRoot ? "src-tauri",
   tauriConf ? builtins.fromJSON (builtins.readFile "${src}/${tauriRoot}/tauri.conf.json"),
+  # Optional; when absent, falls back to tauriConf.version. mkTauriApp
+  # passes its resolved version so the frontend package stays in sync.
+  version ? null,
 }: let
+  isNonEmptyVersion = v: v != null && v != "" && v != true;
   rootCargoTomlPath = "${src}/Cargo.toml";
   workspaceMembers =
     if builtins.pathExists rootCargoTomlPath
@@ -21,7 +25,10 @@
 in
   mkPnpmPackage {
     pname = "${tauriConf.productName}-frontend";
-    version = tauriConf.version;
+    version =
+      if tauriConf ? version && isNonEmptyVersion tauriConf.version
+      then toString tauriConf.version
+      else version;
 
     src = fullCleanSource src {
       allow = [
