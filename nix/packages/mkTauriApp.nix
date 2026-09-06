@@ -22,6 +22,8 @@
   src,
   tauriRoot ? "src-tauri",
   tauriConf ? builtins.fromJSON (builtins.readFile "${src}/${tauriRoot}/tauri.conf.json"),
+  # Required when tauri.conf.json has no version; used as the package version.
+  version,
   lockFile ?
     if builtins.pathExists "${src}/Cargo.lock"
     then "${src}/Cargo.lock"
@@ -41,53 +43,15 @@
   isWindows = target == "windows";
   isLinux = target == "linux";
 
-  # Tauri uses tauriConf.version when set, otherwise the Cargo package
-  # version. That package version may be inherited from the workspace via
-  # `version.workspace = true` (parsed as the table { workspace = true; }),
-  # so walk upward to the nearest Cargo.toml carrying
-  # [workspace.package].version.
-  tauriCargoTomlPath = "${src}/${tauriRoot}/Cargo.toml";
-  tauriCargoToml =
-    if builtins.pathExists tauriCargoTomlPath
-    then builtins.fromTOML (builtins.readFile tauriCargoTomlPath)
-    else {};
-
   isNonEmptyVersion = v: v != null && v != "" && v != true;
-  tauriHasVersion = tauriConf ? version;
-  hasVersion = t: t ? package && t.package ? version;
 
-  # dir is a directory; read its Cargo.toml's [workspace.package].version,
-  # climbing toward the filesystem root until found or exhausted.
-  resolveWorkspaceVersion = dir:
-    let
-      cargoPath = dir + "/Cargo.toml";
-      parentDir = builtins.dirOf dir;
-      cargo =
-        if builtins.pathExists cargoPath
-        then builtins.fromTOML (builtins.readFile cargoPath)
-        else {};
-      wsVer =
-        if (cargo ? workspace && cargo.workspace ? package && cargo.workspace.package ? version)
-        then cargo.workspace.package.version
-        else null;
-    in
-      if isNonEmptyVersion wsVer
-      then toString wsVer
-      else if parentDir == dir then ""
-      else resolveWorkspaceVersion parentDir;
-
-  pkgVer = if hasVersion tauriCargoToml then tauriCargoToml.package.version else null;
-  pkgIsWorkspaceInherit =
-    builtins.typeOf pkgVer == "set" && (pkgVer ? workspace && pkgVer.workspace == true);
-
+  # Prefer tauriConf.version; when tauri.conf.json omits it, fall back to
+  # the required `version` argument (the caller must supply it) rather than
+  # deriving the version from Cargo.
   resolvedVersion =
-    if tauriHasVersion && isNonEmptyVersion tauriConf.version
+    if tauriConf ? version && isNonEmptyVersion tauriConf.version
     then toString tauriConf.version
-    else if pkgIsWorkspaceInherit
-    then resolveWorkspaceVersion (builtins.dirOf tauriCargoTomlPath)
-    else if isNonEmptyVersion pkgVer
-    then toString pkgVer
-    else resolveWorkspaceVersion (builtins.dirOf tauriCargoTomlPath);
+    else version;
 
   pname = "${tauriConf.productName}-${target}";
 
@@ -105,9 +69,13 @@
   # ---- Rust source ----
 
   rootCargoTomlPath = "${src}/Cargo.toml";
+  rootCargoToml =
+    if builtins.pathExists rootCargoTomlPath
+    then builtins.fromTOML (builtins.readFile rootCargoTomlPath)
+    else {};
   workspaceMembers =
     if builtins.pathExists rootCargoTomlPath
-    then (builtins.fromTOML (builtins.readFile rootCargoTomlPath)).workspace.members or []
+    then rootCargoToml.workspace.members or []
     else [];
 
   rustCrateDirs = lib.unique ([tauriRoot] ++ workspaceMembers);
