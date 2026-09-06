@@ -45,9 +45,13 @@
   isUnderDir = rel: dir: dir == "." || rel == dir || lib.hasPrefix "${dir}/" rel;
   isUnderCrateDir = isUnderDir;
 
-  # Root pnpm workspace manifests: always needed for pnpm2nix to resolve
-  # the workspace at all, regardless of frontendRoot.
-  pnpmWorkspaceManifests = ["package.json" "pnpm-lock.yaml" "pnpm-workspace.yaml"];
+  # Root manifests always kept regardless of frontendRoot: the pnpm ones
+  # are needed for pnpm2nix to resolve the workspace at all, and
+  # Cargo.toml is a common single-source-of-truth the frontend's own
+  # build config reads from directly (e.g. a vite.config.ts pulling the
+  # app version from [workspace.package].version, to stay in sync with
+  # what mkTauriApp itself resolves the Rust version from).
+  rootManifests = ["package.json" "pnpm-lock.yaml" "pnpm-workspace.yaml" "Cargo.toml"];
 
   # Directories that must be reachable via traversal - cleanSourceWith
   # calls the filter on directory nodes too, so every ancestor of a kept
@@ -64,7 +68,7 @@
     # crate dir, which is excluded below.
     rel
     == "${tauriRoot}/tauri.conf.json"
-    || lib.elem rel pnpmWorkspaceManifests
+    || lib.elem rel rootManifests
     || lib.any (isUnderDir rel) extraSrcPaths
     || isAncestorOfAllowRoot rel
     || (isUnderDir rel frontendRoot && !(lib.any (isUnderCrateDir rel) rustCrateDirs) && rel != "target" && !(lib.hasPrefix "target/" rel));
@@ -86,7 +90,10 @@ in
     # normally) - pnpm2nix's plain `scriptFull` otherwise runs it verbatim
     # at src's root, which in a monorepo is the wrong directory (e.g. its
     # package.json has no matching script at all, or pnpm's workspace-root
-    # script fallback recurses into unrelated packages instead).
-    scriptFull = "cd ${frontendRoot} && ${tauriConf.build.beforeBuildCommand}";
+    # script fallback recurses into unrelated packages instead). The cd
+    # must stay inside a subshell - stdenv runs every phase in one
+    # continuous script, so a bare `cd` here would otherwise leak into
+    # installPhase too and break distDir's src-root-relative path.
+    scriptFull = "(cd ${frontendRoot} && ${tauriConf.build.beforeBuildCommand})";
     distDir = "${tauriRoot}/${tauriConf.build.frontendDist}";
   }
