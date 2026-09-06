@@ -40,7 +40,54 @@
 }: let
   isWindows = target == "windows";
   isLinux = target == "linux";
-  resolvedVersion = tauriConf.version;
+
+  # Tauri uses tauriConf.version when set, otherwise the Cargo package
+  # version. That package version may be inherited from the workspace via
+  # `version.workspace = true` (parsed as the table { workspace = true; }),
+  # so walk upward to the nearest Cargo.toml carrying
+  # [workspace.package].version.
+  tauriCargoTomlPath = "${src}/${tauriRoot}/Cargo.toml";
+  tauriCargoToml =
+    if builtins.pathExists tauriCargoTomlPath
+    then builtins.fromTOML (builtins.readFile tauriCargoTomlPath)
+    else {};
+
+  isNonEmptyVersion = v: v != null && v != "" && v != true;
+  hasVersion = t: t ? package && t.package ? version;
+
+  # dir is a directory; read its Cargo.toml's [workspace.package].version,
+  # climbing toward the filesystem root until found or exhausted.
+  resolveWorkspaceVersion = dir:
+    let
+      cargoPath = dir + "/Cargo.toml";
+      parentDir = builtins.dirOf dir;
+      cargo =
+        if builtins.pathExists cargoPath
+        then builtins.fromTOML (builtins.readFile cargoPath)
+        else {};
+      wsVer =
+        if (cargo ? workspace && cargo.workspace ? package && cargo.workspace.package ? version)
+        then cargo.workspace.package.version
+        else null;
+    in
+      if isNonEmptyVersion wsVer
+      then toString wsVer
+      else if parentDir == dir then ""
+      else resolveWorkspaceVersion parentDir;
+
+  pkgVer = if hasVersion tauriCargoToml then tauriCargoToml.package.version else null;
+  pkgIsWorkspaceInherit =
+    builtins.typeOf pkgVer == "set" && (pkgVer ? workspace && pkgVer.workspace == true);
+
+  resolvedVersion =
+    if isNonEmptyVersion tauriConf.version
+    then toString tauriConf.version
+    else if pkgIsWorkspaceInherit
+    then resolveWorkspaceVersion (builtins.dirOf tauriCargoTomlPath)
+    else if isNonEmptyVersion pkgVer
+    then toString pkgVer
+    else resolveWorkspaceVersion (builtins.dirOf tauriCargoTomlPath);
+
   pname = "${tauriConf.productName}-${target}";
 
   releaseType =
