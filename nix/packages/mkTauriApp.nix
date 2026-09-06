@@ -21,16 +21,24 @@
 }: attrs @ {
   src,
   tauriRoot ? "src-tauri",
-  tauriConf ? builtins.fromJSON (builtins.readFile "${src}/${tauriRoot}/tauri.conf.json"),
+  # Interpolating "${src}/..." directly would addToStore the whole,
+  # *unfiltered* src as a side effect (string interpolation of a path
+  # always copies its entire root, not just the accessed subpath) - so
+  # this goes through fullCleanSource first, which excludes .devenv (and
+  # other cruft) during the copy instead of racing a live devenv process's
+  # sqlite state files. Same reasoning applies to every other "${src}/..."
+  # read below (lockFile, tauriCargoTomlPath, rootCargoTomlPath,
+  # localPathDepsOf).
+  tauriConf ? builtins.fromJSON (builtins.readFile "${fullCleanSource src {}}/${tauriRoot}/tauri.conf.json"),
   # Last-resort version fallback, used only when tauri.conf.json omits
   # version and it can't be resolved from ${tauriRoot}/Cargo.toml either
   # (directly, or via `version.workspace = true` pointing at the root
   # Cargo.toml's [workspace.package].version).
   version ? null,
   lockFile ?
-    if builtins.pathExists "${src}/Cargo.lock"
-    then "${src}/Cargo.lock"
-    else "${src}/${tauriRoot}/Cargo.lock",
+    if builtins.pathExists "${fullCleanSource src {}}/Cargo.lock"
+    then "${fullCleanSource src {}}/Cargo.lock"
+    else "${fullCleanSource src {}}/${tauriRoot}/Cargo.lock",
   target ? "linux",
   updater ? {enable = false;},
   nsisTauriUtils ? {
@@ -52,6 +60,12 @@
 
   isNonEmptyVersion = v: v != null && v != "" && v != true;
 
+  # See the comment on the `tauriConf` parameter default above: every read
+  # below goes through this filtered copy instead of interpolating `src`
+  # directly, to avoid addToStore-ing the whole unfiltered project (and
+  # racing live tooling like devenv's sqlite state files in .devenv).
+  cleanSrc = fullCleanSource src {};
+
   # Tauri itself falls back to the package Cargo.toml's version when
   # tauri.conf.json omits it, and that version may in turn be inherited
   # from the workspace via `version.workspace = true` (parsed as the
@@ -59,7 +73,7 @@
   # (no walking above it, which doesn't work: `src` is a Nix store path
   # containing only the given subtree, so a parent directory outside it
   # isn't the real workspace root even if one exists on disk).
-  tauriCargoTomlPath = "${src}/${tauriRoot}/Cargo.toml";
+  tauriCargoTomlPath = "${cleanSrc}/${tauriRoot}/Cargo.toml";
   tauriCargoToml =
     if builtins.pathExists tauriCargoTomlPath
     then builtins.fromTOML (builtins.readFile tauriCargoTomlPath)
@@ -98,7 +112,7 @@
 
   # ---- Rust source ----
 
-  rootCargoTomlPath = "${src}/Cargo.toml";
+  rootCargoTomlPath = "${cleanSrc}/Cargo.toml";
   rootCargoToml =
     if builtins.pathExists rootCargoTomlPath
     then builtins.fromTOML (builtins.readFile rootCargoTomlPath)
@@ -158,7 +172,7 @@
   # whose `path` is relative to the workspace root - the two need
   # different bases when resolving ".." segments.
   localPathDepsOf = crateDir: let
-    cargoTomlPath = "${src}/${crateDir}/Cargo.toml";
+    cargoTomlPath = "${cleanSrc}/${crateDir}/Cargo.toml";
     cargoToml =
       if builtins.pathExists cargoTomlPath
       then builtins.fromTOML (builtins.readFile cargoTomlPath)
@@ -261,7 +275,7 @@
   # itself, since it already reads tauriConf/tauriRoot.
   frontend =
     attrs.frontend or (mkTauriFrontend {
-      inherit src tauriRoot frontendRoot extraSrcPaths;
+      inherit src tauriRoot frontendRoot extraSrcPaths tauriConf;
       version = resolvedVersion;
     });
 

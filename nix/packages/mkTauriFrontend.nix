@@ -6,7 +6,15 @@
 }: {
   src,
   tauriRoot ? "src-tauri",
-  tauriConf ? builtins.fromJSON (builtins.readFile "${src}/${tauriRoot}/tauri.conf.json"),
+  # Interpolating "${src}/..." directly would addToStore the whole,
+  # *unfiltered* src as a side effect (string interpolation of a path
+  # always copies its entire root, not just the accessed subpath) - so
+  # this and rootCargoTomlPath below go through fullCleanSource first,
+  # which excludes .devenv (and other cruft) during the copy instead of
+  # racing a live devenv process's sqlite state files. mkTauriApp forwards
+  # its already-resolved tauriConf here, so this default only fires on a
+  # standalone call.
+  tauriConf ? builtins.fromJSON (builtins.readFile "${fullCleanSource src {}}/${tauriRoot}/tauri.conf.json"),
   # Optional; when absent, falls back to tauriConf.version. mkTauriApp
   # passes its resolved version so the frontend package stays in sync.
   version ? null,
@@ -24,7 +32,8 @@
   extraSrcPaths ? [],
 }: let
   isNonEmptyVersion = v: v != null && v != "" && v != true;
-  rootCargoTomlPath = "${src}/Cargo.toml";
+  cleanSrc = fullCleanSource src {};
+  rootCargoTomlPath = "${cleanSrc}/Cargo.toml";
   workspaceMembers =
     if builtins.pathExists rootCargoTomlPath
     then (builtins.fromTOML (builtins.readFile rootCargoTomlPath)).workspace.members or []
