@@ -52,6 +52,14 @@
   # Forwarded to mkTauriFrontend to scope its source in a monorepo; see
   # its docs for defaults/semantics.
   frontendRoot ? builtins.dirOf tauriRoot,
+  extraFrontendSrcPaths ? [],
+  # Extra paths (relative to src) to seed the Rust dependency-closure walk
+  # with, alongside tauriRoot - for anything rustClosure's Cargo.toml-based
+  # detection can't see, e.g. a crate's `include_bytes!`/`include_str!`
+  # pulling in a plain asset directory that isn't a path dependency at all.
+  # A crate dir here also gets its own local path deps pulled in normally;
+  # a plain asset dir just gets included as-is (it has no Cargo.toml, so
+  # nothing further is discovered from it).
   extraSrcPaths ? [],
   ...
 }: let
@@ -257,7 +265,7 @@
       then acc
       else step combined;
   in
-    step [tauriRoot];
+    step ([tauriRoot] ++ extraSrcPaths);
 
   manifestOnlyCrateDirs = lib.subtractLists rustClosure workspaceMembers;
   manifestOnlyPaths = map (dir: "${dir}/Cargo.toml") manifestOnlyCrateDirs;
@@ -317,7 +325,8 @@
   # itself, since it already reads tauriConf/tauriRoot.
   frontend =
     attrs.frontend or (mkTauriFrontend {
-      inherit src tauriRoot frontendRoot extraSrcPaths tauriConf;
+      inherit src tauriRoot frontendRoot tauriConf;
+      extraSrcPaths = extraFrontendSrcPaths;
       version = resolvedVersion;
     });
 
