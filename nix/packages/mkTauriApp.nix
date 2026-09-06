@@ -53,6 +53,7 @@
     else {};
 
   isNonEmptyVersion = v: v != null && v != "" && v != true;
+  tauriHasVersion = tauriConf ? version;
   hasVersion = t: t ? package && t.package ? version;
 
   # dir is a directory; read its Cargo.toml's [workspace.package].version,
@@ -80,7 +81,7 @@
     builtins.typeOf pkgVer == "set" && (pkgVer ? workspace && pkgVer.workspace == true);
 
   resolvedVersion =
-    if isNonEmptyVersion tauriConf.version
+    if tauriHasVersion && isNonEmptyVersion tauriConf.version
     then toString tauriConf.version
     else if pkgIsWorkspaceInherit
     then resolveWorkspaceVersion (builtins.dirOf tauriCargoTomlPath)
