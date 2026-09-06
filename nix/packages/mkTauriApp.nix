@@ -117,16 +117,58 @@
     if builtins.pathExists rootCargoTomlPath
     then builtins.fromTOML (builtins.readFile rootCargoTomlPath)
     else {};
-  workspaceMembers =
-    if builtins.pathExists rootCargoTomlPath
-    then rootCargoToml.workspace.members or []
-    else [];
 
   relOf = path: lib.removePrefix (toString src + "/") (toString path);
   isUnderCrateDir = rel: crateDir: rel == crateDir || lib.hasPrefix "${crateDir}/" rel;
 
   splitPath = p: lib.filter (s: s != "" && s != ".") (lib.splitString "/" p);
   joinPath = parts: lib.concatStringsSep "/" parts;
+
+  # Cargo's `[workspace] members` entries may be globs (each path segment
+  # matched independently via the `glob` crate, e.g. "crates/*") - treating
+  # them as literal paths (as opposed to expanding them here) leaves a
+  # bogus "crates/*" entry that breaks Cargo's own workspace resolution
+  # later, since no such literal directory exists. This doesn't implement
+  # `[workspace] exclude`.
+  escapeRegexChar = c:
+    if builtins.elem c ["." "+" "?" "(" ")" "[" "]" "{" "}" "^" "$" "|" "\\"]
+    then "\\${c}"
+    else c;
+  segmentToRegex = seg: lib.concatStrings (map (c: if c == "*" then ".*" else escapeRegexChar c) (lib.stringToCharacters seg));
+  expandMemberGlob = pattern: let
+    go = baseDir: segs:
+      if segs == []
+      then [baseDir]
+      else let
+        seg = builtins.head segs;
+        rest = builtins.tail segs;
+        joined = if baseDir == "" then seg else "${baseDir}/${seg}";
+      in
+        if !(lib.hasInfix "*" seg)
+        then
+          if builtins.pathExists "${cleanSrc}/${joined}"
+          then go joined rest
+          else []
+        else let
+          dirToList =
+            if baseDir == ""
+            then cleanSrc
+            else "${cleanSrc}/${baseDir}";
+          entries =
+            if builtins.pathExists dirToList
+            then builtins.readDir dirToList
+            else {};
+          regex = segmentToRegex seg;
+          matches = lib.filter (name: entries.${name} == "directory" && builtins.match regex name != null) (builtins.attrNames entries);
+        in
+          lib.concatMap (name: go (if baseDir == "" then name else "${baseDir}/${name}") rest) matches;
+  in
+    go "" (splitPath pattern);
+
+  workspaceMembers =
+    if builtins.pathExists rootCargoTomlPath
+    then lib.concatMap expandMemberGlob (rootCargoToml.workspace.members or [])
+    else [];
 
   # Resolve a Cargo.toml `path = "..."` value written in `fromDir` (a crate
   # dir relative to src) into a path relative to src, collapsing ".."
