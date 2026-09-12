@@ -37,6 +37,18 @@
     ".github"
     ".direnv"
     ".devenv"
+    # Gradle/AGP build-artifact dirs — e.g. a Tauri android target's own
+    # `gen/android/{app,buildSrc}/build` and `.gradle` caches, populated by
+    # running a real build directly against a live checkout (outside a
+    # sandboxed derivation). No tracked source lives under a directory
+    # literally named this in either repo (confirmed via `git ls-files`),
+    # same reasoning as `node_modules`/`dist` above — and unlike those,
+    # these can reach many thousands of files, making every mkTauriApp
+    # call that includes this subtree (any of them, since `src` is
+    # typically the whole monorepo root) walk/copy all of them for
+    # nothing every single evaluation.
+    "build"
+    ".gradle"
   ];
 
   # Delegates to nixpkgs' own cleanSourceFilter (VCS metadata, editor

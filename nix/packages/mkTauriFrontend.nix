@@ -72,6 +72,10 @@
     || lib.any (isUnderDir rel) extraSrcPaths
     || isAncestorOfAllowRoot rel
     || (isUnderDir rel frontendRoot && !(lib.any (isUnderCrateDir rel) rustCrateDirs) && rel != "target" && !(lib.hasPrefix "target/" rel));
+  frontendSrc = fullCleanSource src {
+    allow = [isFrontendSrcPath];
+    deny = [(path: type: !(isFrontendSrcPath path type))];
+  };
 in
   mkPnpmPackage {
     pname = "${tauriConf.productName}-frontend";
@@ -80,10 +84,7 @@ in
       then toString tauriConf.version
       else version;
 
-    src = fullCleanSource src {
-      allow = [isFrontendSrcPath];
-      deny = [(path: type: !(isFrontendSrcPath path type))];
-    };
+    src = frontendSrc;
 
     # beforeBuildCommand is authored assuming CWD is the frontend project
     # itself (as it would be if you `cd apps/desktop && cargo tauri build`
@@ -96,4 +97,26 @@ in
     # installPhase too and break distDir's src-root-relative path.
     scriptFull = "(cd ${frontendRoot} && ${tauriConf.build.beforeBuildCommand})";
     distDir = "${tauriRoot}/${tauriConf.build.frontendDist}";
+  }
+  // {
+    # Exposed for mkTauriApp's android target: Tauri's own Android/Gradle
+    # integration shells back out to `pnpm tauri android android-studio-script`
+    # per ABI (see mkTauriApp.nix's own comment on why), which needs a real,
+    # already-`pnpm install`-ed `node_modules` next to this same filtered
+    # source at build time — not just the built `dist` this derivation's own
+    # $out is. A plain top-level attr, not `passthru.frontendSrc`: this `//`
+    # runs AFTER mkPnpmPackage's own `mkDerivation` call already returned,
+    # so nesting under `passthru` here would just replace (not merge into)
+    # whatever passthru mkPnpmPackage's own derivation.nix already set,
+    # while still leaving `frontendSrc` unreachable at the top level (the
+    # attribute mkTauriApp.nix's android branch actually reads) — plain
+    # mkDerivation's own passthru-flattening onto the top level only
+    # applies to a `passthru` argument given *to* mkDerivation itself, not
+    # to an attrset merged onto its result afterward like this one. Not
+    # returning a second, node_modules-only derivation directly for the
+    # same reason `mkTauriApp.nix`'s own comment on `androidNodeModules`
+    # gives: mkPnpmPackage has no multi-output support, so that needs a
+    # second, separate mkPnpmPackage call (distDir = "node_modules") that
+    # only mkTauriApp's android branch ever forces.
+    inherit frontendSrc;
   }

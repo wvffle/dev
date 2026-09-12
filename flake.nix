@@ -4,12 +4,21 @@
     pnpm2nix.url = "github:FliegendeWurst/pnpm2nix-nzbr";
     pnpm2nix.inputs.nixpkgs.follows = "nixpkgs";
     crane.url = "github:ipetkov/crane";
+    # mkTauriApp's android target needs rustc/std for the 4 Android ABIs
+    # (aarch64/armv7/i686/x86_64-*-android*) — plain nixpkgs only ships a
+    # single-target rustc, so this is what supplies the rest as ordinary
+    # fetchurl-backed derivations (Rust's own prebuilt component archives,
+    # the same ones `rustup target add` would download), fully usable
+    # inside a sandboxed `nix build`.
+    fenix.url = "github:nix-community/fenix";
+    fenix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = {
     nixpkgs,
     pnpm2nix,
     crane,
+    fenix,
     ...
   }: let
     forAllSystems = with nixpkgs.lib; (genAttrs systems.flakeExposed);
@@ -28,6 +37,7 @@
       mkTauriFrontend = prev.callPackage ./nix/packages/mkTauriFrontend.nix {};
       mkTauriApp = prev.callPackage ./nix/packages/mkTauriApp.nix {
         crane = crane;
+        fenix = fenix;
         pkgs = prev;
       };
       mkPnpmPackage = prev.callPackage ./nix/packages/mkPnpmPackage.nix {
