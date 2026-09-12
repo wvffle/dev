@@ -1,0 +1,16 @@
+[build]
+target = "xtensa-esp32-espidf"
+
+[target.xtensa-esp32-espidf]
+linker = "ldproxy"
+runner = "espflash flash --monitor"
+
+[env]
+MCU = "esp32"
+# Matches mkRustESPFirmware's own esp-idf-xtensa pin (nixpkgs-esp-dev) so
+# `cargo build` outside Nix and the hermetic Nix build use the same ESP-IDF.
+ESP_IDF_VERSION = "v5.5.2"
+RUSTFLAGS = "--cfg espidf_time64"
+
+[unstable]
+build-std = ["std", "panic_abort"]

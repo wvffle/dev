@@ -12,6 +12,13 @@
     # inside a sandboxed `nix build`.
     fenix.url = "github:nix-community/fenix";
     fenix.inputs.nixpkgs.follows = "nixpkgs";
+    # mkRustESPFirmware's ESP-IDF C SDK/toolchain. Deliberately NOT
+    # `follows: nixpkgs`: its own packaging (nix/esp-idf/tools.nix)
+    # hardcodes a `python310` callPackage argument that no longer exists
+    # once `nixpkgs` here drifts far enough ahead (this repo tracks the
+    # rolling channel) — letting it use its own pinned nixpkgs sidesteps
+    # that version skew entirely.
+    esp-dev.url = "github:mirrexagon/nixpkgs-esp-dev";
   };
 
   outputs = {
@@ -19,6 +26,7 @@
     pnpm2nix,
     crane,
     fenix,
+    esp-dev,
     ...
   }: let
     forAllSystems = with nixpkgs.lib; (genAttrs systems.flakeExposed);
@@ -42,6 +50,11 @@
       };
       mkPnpmPackage = prev.callPackage ./nix/packages/mkPnpmPackage.nix {
         inherit pnpm2nix;
+      };
+      mkRustESPFirmware = prev.callPackage ./nix/packages/mkRustESPFirmware.nix {
+        inherit crane;
+        espDev = esp-dev;
+        pkgs = prev;
       };
     };
 

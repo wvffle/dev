@@ -1,0 +1,26 @@
+[workspace]
+# Empty: marks this as its own workspace root — see ../std/Cargo.toml for
+# why (same reasoning, even though this crate doesn't need espup itself).
+
+[package]
+name = "esp32-firmware-nostd-example"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "esp32-firmware-nostd-example"
+test = false
+bench = false
+
+[dependencies]
+esp-backtrace = { version = "0.20", features = ["esp32", "panic-handler", "println"] }
+esp-bootloader-esp-idf = { version = "0.6", features = ["esp32"] }
+esp-hal = { version = "1.2", features = ["esp32", "log-04", "unstable"] }
+esp-println = { version = "0.18", features = ["esp32", "log-04"] }
+
+[profile.release]
+debug = true
+debug-assertions = true
+lto = "fat"
+codegen-units = 1
