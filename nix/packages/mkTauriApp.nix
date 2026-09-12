@@ -735,6 +735,20 @@ GRADLEW_EOF
     + lib.optionalString (!release) " --debug"
     + " --config '${tauriConfigPatch}'";
 
+  # `androidMitmRecord`'s own build command — deliberately independent of
+  # `release`/`androidBuildCmd` above: it always builds *both* variants,
+  # sequentially, in the same recording session, so one FOD's `deps.json`
+  # covers both debug's and release's dependency graphs regardless of
+  # which variant this particular `mkTauriApp` call itself targets. The
+  # release half here builds unsigned (no `androidSigningSetup` ran, since
+  # that's gated on the outer `release` param, which callers regenerating
+  # deps have no reason to set) — AGP happily produces an unsigned release
+  # APK; nothing here ever needs to `adb install` it, only resolve its
+  # dependencies.
+  androidMitmRecordBuildCmd =
+    "cargo tauri android build --apk --debug --config '${tauriConfigPatch}'"
+    + " && cargo tauri android build --apk --config '${tauriConfigPatch}'";
+
   # `androidPreBuild`'s own final `cd ${frontendRoot}` (its own comment
   # explains why: matching where a real `cargo tauri android build` runs
   # from by hand) means CWD is already `frontendRoot` by the time this
@@ -775,7 +789,7 @@ GRADLEW_EOF
   # wrong in the first place.
   #
   # `androidDepsFile` is a single per-app JSON file shaped:
-  #   { "androidMitmRecordHash": {"debug": "sha256-...", "release": "sha256-..."},
+  #   { "androidMitmRecordHash": "sha256-...",
   #     "dependencies": {"<url>": {"hash": "sha256-..."}, ...} }
   # `dependencies` is mitm-cache's own `fetch.nix` format directly (not nixpkgs'
   # `gradle.fetchDeps`'s *compressed* tree-shaped format, which needs a real
@@ -787,17 +801,19 @@ GRADLEW_EOF
   # extra entries — confirmed empirically, a release-only build failed at
   # `generateReleaseLintModel` unable to resolve artifacts a debug-only
   # recording never captured). `androidMitmRecordHash` is this same file's
-  # own record of `androidMitmRecord`'s expected output hash *per variant*
-  # (see `outputHash`'s own comment below for why it's per-variant, not one
-  # shared value) — kept alongside `dependencies` instead of in outputs.nix so
+  # own record of `androidMitmRecord`'s expected output hash — a single
+  # shared value, not per-variant: `androidMitmRecord` always records *both*
+  # variants in one FOD (see its own `buildPhaseCargoCommand`'s comment), so
+  # its output content — and thus this hash — covers both regardless of
+  # which variant the real `outputs.<app>-android` build itself targets.
+  # Kept alongside `dependencies` instead of in outputs.nix so
   # `update-android-deps <app>` can read *and* write the whole regenerate-
   # and-pin cycle in one place, no separate Nix edit ever required.
   # Regenerate/extend `dependencies` by building `androidMitmRecord` (same `devenv
   # build`/nixbuild.net pipeline as everything else — it's a real FOD, so it
-  # gets network regardless of sandboxing) with the relevant `release` value
-  # and merging its `$out/deps.json` into `dependencies`, whenever this app's
-  # Gradle-side dependencies change (AGP/Kotlin/AndroidX version bumps,
-  # mostly) or a not-yet-covered build type is built for the first time.
+  # gets network regardless of sandboxing) and merging its `$out/deps.json`
+  # into `dependencies`, whenever this app's Gradle-side dependencies change
+  # (AGP/Kotlin/AndroidX version bumps, mostly).
   androidDepsData = lib.importJSON androidDepsFile;
 
   androidMitmCache = mitm-cache.fetch {
@@ -821,7 +837,7 @@ GRADLEW_EOF
       cargoArtifacts = null;
       dontFixup = true;
       nativeBuildInputs = platformNativeInputs ++ [curl pkgs.jq python3Packages.ephemeral-port-reserve];
-      buildPhaseCargoCommand = androidBuildCmd;
+      buildPhaseCargoCommand = androidMitmRecordBuildCmd;
       preBuild =
         androidPreBuild
         + ''
@@ -906,22 +922,18 @@ GRADLEW_EOF
       '';
       outputHashMode = "recursive";
       outputHashAlgo = "sha256";
-      # Per-*variant*, not one shared value: `androidBuildCmd`'s `--debug`
-      # flag (or lack of it) makes AGP resolve a genuinely different runtime
-      # classpath, so a debug recording's `deps.json` content — and thus its
-      # real content hash — legitimately differs from a release recording's.
-      # Read from `androidDepsFile` itself (see its own comment above) so
-      # `update-android-deps <app>` can update this in the one file it
-      # already writes `dependencies` back into, instead of a second place. Falls
-      # back to `lib.fakeHash` for a variant this app has never recorded
-      # yet — the resulting *guaranteed* mismatch is exactly how the real
-      # hash gets discovered the first time (see mitm-cache's own comment on
-      # this dance).
-      outputHash = androidDepsData.androidMitmRecordHash.${
-        if release
-        then "release"
-        else "debug"
-      } or lib.fakeHash;
+      # One shared value, not per-variant: `androidMitmRecordBuildCmd` above
+      # always records both debug and release in the same session, so this
+      # FOD's own content — and thus its real hash — already covers both
+      # regardless of which variant this particular `mkTauriApp` call
+      # targets. Read from `androidDepsFile` itself (see its own comment
+      # above) so `update-android-deps <app>` can update this in the one
+      # file it already writes `dependencies` back into, instead of a
+      # second place. Falls back to `lib.fakeHash` when this app has never
+      # recorded anything yet — the resulting *guaranteed* mismatch is
+      # exactly how the real hash gets discovered the first time (see
+      # mitm-cache's own comment on this dance).
+      outputHash = androidDepsData.androidMitmRecordHash or lib.fakeHash;
     });
 
   cargoArtifacts =
