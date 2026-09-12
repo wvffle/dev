@@ -56,6 +56,16 @@
     # evaluation, and no tracked source lives under a dir named this in
     # either repo (confirmed via `git ls-files`).
     "target"
+    # embuild's (esp-idf-sys's build-time dependency) self-managed ESP-IDF
+    # checkout + toolchain download dir, populated by running `cargo
+    # build` directly against an mkRustESPFirmware crate's checkout
+    # outside a sandboxed derivation — same reasoning as `target` above,
+    # except worse: this one reaches multiple GB (a full ESP-IDF clone
+    # plus toolchain archives), not just many files. Found the hard way:
+    # left behind by local testing, it got silently copied into a
+    # `qr-scanner-firmware` build's source derivation and made every
+    # evaluation touching that source needlessly slow.
+    ".embuild"
   ];
 
   # Delegates to nixpkgs' own cleanSourceFilter (VCS metadata, editor
