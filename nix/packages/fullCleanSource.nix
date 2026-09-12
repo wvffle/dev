@@ -49,6 +49,13 @@
     # nothing every single evaluation.
     "build"
     ".gradle"
+    # Cargo's own build-artifact dir — same reasoning as `build`/`.gradle`
+    # above: a live local `cargo build`/`cargo check` run directly against
+    # a checkout (outside a sandboxed derivation) leaves tens of thousands
+    # of files here for every mkTauriApp caller to walk on every
+    # evaluation, and no tracked source lives under a dir named this in
+    # either repo (confirmed via `git ls-files`).
+    "target"
   ];
 
   # Delegates to nixpkgs' own cleanSourceFilter (VCS metadata, editor
