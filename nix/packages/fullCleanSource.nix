@@ -66,6 +66,12 @@
     # `qr-scanner-firmware` build's source derivation and made every
     # evaluation touching that source needlessly slow.
     ".embuild"
+    # GrayMatter's (Claude Code's memory MCP server) per-project state
+    # dir — not build output, but same reasoning as everything else here:
+    # it's local machine/session state, no tracked source ever lives
+    # under a directory named this, and it has nothing to contribute to
+    # any build's source.
+    ".graymatter"
   ];
 
   # Delegates to nixpkgs' own cleanSourceFilter (VCS metadata, editor
