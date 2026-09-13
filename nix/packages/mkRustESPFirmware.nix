@@ -44,7 +44,8 @@
   extraEnv ? {},
 }:
   assert lib.assertOneOf "type" type ["std" "nostd"]; let
-    crateRoot = "${fullCleanSource src {}}/${cargoRoot}";
+    fullSrc = fullCleanSource src {};
+    crateRoot = "${fullSrc}/${cargoRoot}";
     crateToml = builtins.fromTOML (builtins.readFile "${crateRoot}/Cargo.toml");
 
     rust-xtensa = pkgs.callPackage ./mkRustESPFirmware/rust-xtensa.nix {};
@@ -69,10 +70,35 @@
       if version != null
       then version
       else crateToml.package.version;
-    src = crateRoot;
+    # The FULL cleaned repo, not just `crateRoot` — a firmware crate that
+    # path-depends on a sibling outside its own directory (e.g.
+    # `flash-core = { path = "../../crates/core" }`) needs that sibling
+    # actually present in the build sandbox, which slicing `src` down to
+    # just `cargoRoot` would exclude entirely (a real failure this hit:
+    # "failed to read `/crates/core/Cargo.toml`" — the `../..` walked
+    # straight past the sandboxed root when it only ever contained
+    # `apps/qr-scanner`'s own subtree).
+    #
+    # `sourceRoot` (not `cargoExtraArgs = "--manifest-path ..."`, tried
+    # first and also wrong) then moves every build phase's cwd down into
+    # the crate's own directory — needed because `--manifest-path` only
+    # changes which Cargo.toml is read, not Cargo's *directory-based*
+    # config discovery: `apps/qr-scanner/.cargo/config.toml` (the
+    # `target = "xtensa-esp32-espidf"` pin every consuming crate needs)
+    # is only ever found by walking *up* from the current directory, and
+    # with a `--manifest-path` pointing down into a subdirectory from an
+    # unchanged cwd at the tree root, cargo never walks up through it at
+    # all — silently falling back to the host target instead (surfaced as
+    # esp-idf-sys's build script erroring "Unsupported target
+    # 'x86_64-unknown-linux-gnu'"). `sourceRoot`, by contrast, is exactly
+    # where cargo actually runs, so both `../../crates/core` (relative to
+    # that directory) and `.cargo/config.toml` discovery resolve exactly
+    # as they would from a plain `cd apps/qr-scanner && cargo build`.
+    src = fullSrc;
+    sourceRoot = "${fullSrc.name}/${cargoRoot}";
     strictDeps = true;
     doCheck = false; # cross-compiled for Xtensa; can't run the crate's own tests on the build host
-    # crane defaults CARGO_PROFILE to "release" already — no cargoExtraArgs needed.
+    # crane defaults CARGO_PROFILE to "release" already.
     #
     # `cargoArtifacts = null` forces a single-phase build (no separate
     # buildDepsOnly derivation providing a prebuilt `target/` to seed
