@@ -937,15 +937,22 @@ GRADLEW_EOF
     });
 
   cargoArtifacts =
-    attrs.cargoArtifacts or (
-      craneLib.buildDepsOnly (commonArgs
-        // {
-          preBuild =
-            if isWindows
-            then windowsPreBuild
-            else commonPreBuild;
-        })
-    );
+    if isAndroid
+    # crane's usual separate buildDepsOnly pre-warm pass only ever covers a
+    # single (host) cargo target, not the 4 cross-compiled Android ABIs the
+    # real build produces, so it buys nothing extra here — skipped, same as
+    # `androidMitmRecord`'s own `cargoArtifacts = null`.
+    then null
+    else
+      attrs.cargoArtifacts or (
+        craneLib.buildDepsOnly (commonArgs
+          // {
+            preBuild =
+              if isWindows
+              then windowsPreBuild
+              else commonPreBuild;
+          })
+      );
 
   buildCmd =
     "cargo tauri build --ci --config '${tauriConfigPatch}'"
