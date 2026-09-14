@@ -612,52 +612,62 @@
   # tauri android build` would run from by hand — everything past this
   # point (`androidBuildCmd`, and the recursive `cargo tauri ...` calls
   # gradle's own `rustBuild*` tasks make) assumes that CWD.
+  # Shared between `androidPreBuild` (the real app build) and android's own
+  # `buildDepsOnly` override below (see `androidBuildDepsOnlyCmd`'s own
+  # comment for why that now cross-compiles too): crane's own
+  # configureCargoVendoredDepsHook (already run by this point, during
+  # configurePhase) points cargo's crates-io source replacement straight at
+  # the vendored deps' Nix store path — fine for every ordinary build
+  # script (cargo gives those a real writable scratch dir via OUT_DIR), but
+  # tauri-plugin's own build.rs writes into its *own* `CARGO_MANIFEST_DIR`
+  # instead when cross-compiling for android/ios specifically (copying its
+  # bundled `tauri-api` JS next to a `.tauri` dir it creates there) —
+  # confirmed by reading tauri-plugin-2.6.3/src/build/mobile.rs directly.
+  # Both the real app build *and* `buildDepsOnly` now actually cross-compile
+  # for android, so both hit this same `cfg(mobile)` branch while
+  # compiling tauri-plugin as a dependency (linux/windows never do).
+  # /nix/store itself is mounted read-only, so no chmod can fix this in
+  # place — copying the whole vendored tree out and repointing cargo's own
+  # config at that copy is the only way around it.
+  androidVendorWritableFix = ''
+    vendor_dir=$(sed -n 's/^directory = "\(.*\)"$/\1/p' "$CARGO_HOME/config.toml" | tail -1)
+    if [ -n "$vendor_dir" ]; then
+      writable_vendor_dir="$PWD/.cargo-vendor-writable"
+      # `-L`/dereference, not a plain `cp -r`: crane's own vendor
+      # directory is built entirely out of `ln -s` entries, one per
+      # crate, each pointing at that crate's own Nix store output (see
+      # crane's vendorMultipleCargoDeps.nix) — a plain `cp -r` copies
+      # those symlinks *as symlinks*, so `CARGO_MANIFEST_DIR` for any
+      # vendored crate still resolves straight through to a read-only
+      # /nix/store path either way (confirmed empirically: `chmod -R u+w`
+      # on the naive copy failed outright, "Operation not permitted",
+      # because it was chasing the symlink into /nix/store, which is
+      # mounted read-only at the filesystem level — no permission bits
+      # can fix that). `-L` copies each symlink's real target content
+      # instead, so every crate becomes a genuine, independent, writable
+      # copy.
+      cp -rL "$vendor_dir" "$writable_vendor_dir"
+      chmod -R u+w "$writable_vendor_dir"
+      sed -i "s|directory = \"$vendor_dir\"|directory = \"$writable_vendor_dir\"|" "$CARGO_HOME/config.toml"
+    fi
+  '';
+
   androidPreBuild =
     assert lib.assertMsg (!release || androidSigning != null)
     "mkTauriApp: target \"android\" with release = true needs androidSigning set (a real signing config is required to package a release APK — unlike debug, there's no automatic fallback keystore).";
     commonPreBuild
     + ''
       export HOME=$(mktemp -d)
-      # crane's own configureCargoVendoredDepsHook (already run by this
-      # point, during configurePhase) points cargo's crates-io source
-      # replacement straight at the vendored deps' Nix store path — fine
-      # for every ordinary build script (cargo gives those a real writable
-      # scratch dir via OUT_DIR), but tauri-plugin's own build.rs writes
-      # into its *own* `CARGO_MANIFEST_DIR` instead when cross-compiling
-      # for android/ios specifically (copying its bundled `tauri-api` JS
-      # next to a `.tauri` dir it creates there) — confirmed by reading
-      # tauri-plugin-2.6.3/src/build/mobile.rs directly, and only surfaces
-      # here because linux/windows never hit that `cfg(mobile)` branch.
-      # /nix/store itself is mounted read-only, so no chmod can fix this in
-      # place — copying the whole vendored tree out and repointing cargo's
-      # own config at that copy is the only way around it.
-      # A sibling of the already-unpacked source (which `chmod` just proved
-      # writable) rather than under `$HOME`: on at least one remote builder
-      # this build ran against, a freshly `mktemp -d`'d `$HOME` landed on a
-      # mount where `chmod` itself failed outright ("Operation not
-      # permitted") even on a directory this same build had just created —
-      # confirmed empirically, not something narrower to `chmod -R` on a
-      # copy specifically.
-      vendor_dir=$(sed -n 's/^directory = "\(.*\)"$/\1/p' "$CARGO_HOME/config.toml" | tail -1)
-      if [ -n "$vendor_dir" ]; then
-        writable_vendor_dir="$PWD/.cargo-vendor-writable"
-        # `-L`/dereference, not a plain `cp -r`: crane's own vendor
-        # directory is built entirely out of `ln -s` entries, one per
-        # crate, each pointing at that crate's own Nix store output (see
-        # crane's vendorMultipleCargoDeps.nix) — a plain `cp -r` copies
-        # those symlinks *as symlinks*, so `CARGO_MANIFEST_DIR` for any
-        # vendored crate still resolves straight through to a read-only
-        # /nix/store path either way (confirmed empirically: `chmod -R u+w`
-        # on the naive copy failed outright, "Operation not permitted",
-        # because it was chasing the symlink into /nix/store, which is
-        # mounted read-only at the filesystem level — no permission bits
-        # can fix that). `-L` copies each symlink's real target content
-        # instead, so every crate becomes a genuine, independent, writable
-        # copy.
-        cp -rL "$vendor_dir" "$writable_vendor_dir"
-        chmod -R u+w "$writable_vendor_dir"
-        sed -i "s|directory = \"$vendor_dir\"|directory = \"$writable_vendor_dir\"|" "$CARGO_HOME/config.toml"
-      fi
+    ''
+    # `androidVendorWritableFix`'s own writable copy lands next to the
+    # already-unpacked source (which `chmod` just proved writable) rather
+    # than under `$HOME`: on at least one remote builder this build ran
+    # against, a freshly `mktemp -d`'d `$HOME` landed on a mount where
+    # `chmod` itself failed outright ("Operation not permitted") even on a
+    # directory this same build had just created — confirmed empirically,
+    # not something narrower to `chmod -R` on a copy specifically.
+    + androidVendorWritableFix
+    + ''
       # The tauri CLI always execs `gen/android/gradlew` directly (its own
       # Rust code hardcodes this, confirmed empirically — not something a
       # `gradle` already on $PATH gets substituted for), and the real
@@ -936,23 +946,57 @@ GRADLEW_EOF
       outputHash = androidDepsData.androidMitmRecordHash or lib.fakeHash;
     });
 
+  # android-only: unlike `isWindows` (whose `craneLib` is built from
+  # `pkgsCross.mingwW64`, so a plain `cargo check` already defaults to the
+  # windows-gnu target), android's `craneLib` only has its *toolchain*
+  # swapped (`overrideToolchain androidRustToolchain`, adding per-ABI Rust
+  # std on top of the ordinary host stable toolchain) — the underlying
+  # pkgs, and so cargo's default target, is still plain linux. A bare
+  # `cargo check` here would check the HOST target and never touch any
+  # `cfg(target_os = "android")` dependency branch, pulling in tauri's
+  # Linux desktop (webkit2gtk/gtk-sys) backend instead — one this target's
+  # own nativeBuildInputs/buildInputs deliberately don't carry pkg-config/
+  # GTK dev headers for (a real android build never needs them; the OS
+  # supplies its own WebView). Looping an explicit `--target` over all 4
+  # real ABIs is what makes this genuinely reusable by the real per-ABI
+  # `cargo build` invocations `cargo tauri android build` makes later (same
+  # package scope via `cargoExtraArgs`, same profile via `release` — note
+  # this bypasses crane's own `cargoWithProfile`/`$CARGO_PROFILE` machinery
+  # entirely, which `configureCargoCommonVarsHook` otherwise defaults to
+  # "release" — `androidBuildCmd` below passes `--debug` unless `release`,
+  # so matching *that* flag directly, not crane's own default, is what
+  # keeps this reusable). check-then-build per target, mirroring crane's
+  # own `buildDepsOnly` default (see its own comment: check first "to cache
+  # cargo's internal artifacts, fingerprints, etc", then a real build "to
+  # actually compile the deps and cache the results").
+  androidBuildDepsOnlyCmd = lib.concatMapStringsSep "\n" (t: ''
+    cargo check --target ${t.triple} ${lib.optionalString release "--release"} ${commonArgs.cargoExtraArgs}
+    cargo build --target ${t.triple} ${lib.optionalString release "--release"} ${commonArgs.cargoExtraArgs}
+  '') androidRustTargets;
+
   cargoArtifacts =
-    if isAndroid
-    # crane's usual separate buildDepsOnly pre-warm pass only ever covers a
-    # single (host) cargo target, not the 4 cross-compiled Android ABIs the
-    # real build produces, so it buys nothing extra here — skipped, same as
-    # `androidMitmRecord`'s own `cargoArtifacts = null`.
-    then null
-    else
-      attrs.cargoArtifacts or (
-        craneLib.buildDepsOnly (commonArgs
-          // {
-            preBuild =
-              if isWindows
-              then windowsPreBuild
-              else commonPreBuild;
-          })
-      );
+    attrs.cargoArtifacts or (
+      craneLib.buildDepsOnly (commonArgs
+        // {
+          preBuild =
+            if isWindows
+            then windowsPreBuild
+            else commonPreBuild;
+        }
+        // lib.optionalAttrs isAndroid {
+          buildPhaseCargoCommand = androidBuildDepsOnlyCmd;
+          # Cross-compiling for android here too (see `androidBuildDepsOnlyCmd`'s
+          # own comment) hits the same tauri-plugin `cfg(mobile)` build.rs
+          # issue `androidPreBuild` already works around — needed here too,
+          # not just the real app build, since this is deps-only compiling.
+          preBuild =
+            commonPreBuild
+            + ''
+              export HOME=$(mktemp -d)
+            ''
+            + androidVendorWritableFix;
+        })
+    );
 
   buildCmd =
     "cargo tauri build --ci --config '${tauriConfigPatch}'"
