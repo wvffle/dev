@@ -965,12 +965,17 @@ GRADLEW_EOF
   # entirely, which `configureCargoCommonVarsHook` otherwise defaults to
   # "release" — `androidBuildCmd` below passes `--debug` unless `release`,
   # so matching *that* flag directly, not crane's own default, is what
-  # keeps this reusable). check-then-build per target, mirroring crane's
-  # own `buildDepsOnly` default (see its own comment: check first "to cache
-  # cargo's internal artifacts, fingerprints, etc", then a real build "to
-  # actually compile the deps and cache the results").
+  # keeps this reusable). Deliberately *not* crane's own check-then-build
+  # buildDepsOnly default: that exists so one `cargoArtifacts` derivation
+  # can serve two different downstream commands (e.g. a `cargo clippy`
+  # pass and a separate `cargo build` pass sharing the same pre-warm) —
+  # here there's exactly one consumer, `cargo tauri android build`'s own
+  # per-ABI `cargo build --target <triple>`, and `cargo check` produces no
+  # codegen a subsequent `cargo build` could reuse (dependency crates build
+  # with `incremental = false` by default, and build-script/`OUT_DIR`
+  # caching is identical either way) — so a `check` pass here would just
+  # be duplicate front-end work with nothing to show for it.
   androidBuildDepsOnlyCmd = lib.concatMapStringsSep "\n" (t: ''
-    cargo check --target ${t.triple} ${lib.optionalString release "--release"} ${commonArgs.cargoExtraArgs}
     cargo build --target ${t.triple} ${lib.optionalString release "--release"} ${commonArgs.cargoExtraArgs}
   '') androidRustTargets;
 
