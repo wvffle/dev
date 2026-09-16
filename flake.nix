@@ -42,6 +42,11 @@
 
     overlays.default = final: prev: {
       fullCleanSource = import ./nix/packages/fullCleanSource.nix {inherit (prev) lib;};
+      # The raw crane lib, for consumers building their own cargo
+      # derivations (e.g. a CI deps pre-warm keyed on Cargo.lock) without
+      # this flake wrapping every use case — `craneLib.overrideToolchain`
+      # lets them match whatever toolchain their shell actually uses.
+      craneLib = crane.mkLib prev;
       mkTauriFrontend = prev.callPackage ./nix/packages/mkTauriFrontend.nix {};
       mkTauriApp = prev.callPackage ./nix/packages/mkTauriApp.nix {
         crane = crane;
