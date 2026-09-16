@@ -127,9 +127,11 @@
   # emulator; every extra entry here costs a full per-ABI Rust compile in
   # both `buildDepsOnly` and the app build, so narrowing this is the
   # single biggest build-time lever this file has. `androidMitmRecord`
-  # deliberately ignores this (see its own comment): it always records the
-  # all-4-ABI universal build, so the recorded Gradle-dependency lockfile
-  # (and its pinned hash) stay valid however this knob is set.
+  # follows this selection too — the recorded Gradle-dependency lockfile
+  # then covers exactly (and only) what the selected build actually
+  # resolves — so CHANGING the selection changes what a recording run
+  # produces: re-run the app's `update-dependencies` flow afterwards to
+  # regenerate the deps file and its pinned recording hash.
   androidTargetNames = android.targets or ["aarch64" "armv7" "i686" "x86_64"];
 
   isNonEmptyVersion = v: v != null && v != "" && v != true;
@@ -253,12 +255,11 @@
   androidSelectsAllTargets = lib.length androidSelectedTargets == lib.length androidRustTargets;
 
   # `androidCargoEnv` and the fenix toolchain below deliberately stay
-  # scoped to the FULL target list, not `androidSelectedTargets`:
-  # `androidMitmRecord` always builds the all-4-ABI universal variant (see
-  # its own comment), so it needs every triple's linker env and rust-std
-  # regardless of what the real app build narrows itself down to — and
-  # keeping them selection-independent also keeps the deps derivation's
-  # env (and thus crane's cache) stable when the selection changes.
+  # scoped to the FULL target list, not `androidSelectedTargets`: the
+  # extra triples' env vars and rust-std components are inert when
+  # nothing builds for those triples, and keeping them
+  # selection-independent keeps the deps derivation's env (and thus
+  # crane's cache) stable when the selection changes.
   androidCargoEnv = lib.listToAttrs (lib.concatMap (t: let
     clang = "${androidNdkBin}/${t.clangPrefix}${toString androidMinSdk}-clang";
     clangxx = "${androidNdkBin}/${t.clangPrefix}${toString androidMinSdk}-clang++";
@@ -818,18 +819,30 @@ GRADLEW_EOF
     + " --config '${tauriConfigPatch}'";
 
   # `androidMitmRecord`'s own build command — deliberately independent of
-  # `release`/`androidBuildCmd` above: it always builds *both* variants,
-  # sequentially, in the same recording session, so one FOD's `deps.json`
-  # covers both debug's and release's dependency graphs regardless of
-  # which variant this particular `mkTauriApp` call itself targets. The
+  # `release`/`androidBuildCmd` above in ONE dimension only: it always
+  # builds *both* variants, sequentially, in the same recording session,
+  # so one FOD's `deps.json` covers both debug's and release's dependency
+  # graphs regardless of which variant this particular `mkTauriApp` call
+  # itself targets (AGP resolves debug/release classpaths separately —
+  # recording only one misses the other's own extra artifacts). The
   # release half here builds unsigned (no `androidSigningSetup` ran, since
   # that's gated on the outer `release` param, which callers regenerating
   # deps have no reason to set) — AGP happily produces an unsigned release
   # APK; nothing here ever needs to `adb install` it, only resolve its
   # dependencies.
+  #
+  # The ABI selection however IS honored (same `--target` flags as
+  # `androidBuildCmd`), so the recorded lockfile pins exactly what the
+  # real build resolves and nothing more — no dependency entries for ABIs
+  # the app never ships. The flip side: changing `android.targets` later
+  # means re-running the app's `update-dependencies` flow, since both the
+  # recorded set and this FOD's pinned hash track the selection.
+  androidMitmRecordTargetFlags =
+    lib.optionalString (!androidSelectsAllTargets)
+    (lib.concatMapStrings (t: " --target ${androidTargetShortName t}") androidSelectedTargets);
   androidMitmRecordBuildCmd =
-    "cargo tauri android build --apk --debug --config '${tauriConfigPatch}'"
-    + " && cargo tauri android build --apk --config '${tauriConfigPatch}'";
+    "cargo tauri android build --apk --debug${androidMitmRecordTargetFlags} --config '${tauriConfigPatch}'"
+    + " && cargo tauri android build --apk${androidMitmRecordTargetFlags} --config '${tauriConfigPatch}'";
 
   # `androidPreBuild`'s own final `cd ${frontendRoot}` (its own comment
   # explains why: matching where a real `cargo tauri android build` runs
