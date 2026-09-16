@@ -904,11 +904,14 @@ GRADLEW_EOF
   # Kept alongside `dependencies` instead of in outputs.nix so
   # `update-android-deps <app>` can read *and* write the whole regenerate-
   # and-pin cycle in one place, no separate Nix edit ever required.
-  # Regenerate/extend `dependencies` by building `androidMitmRecord` (same `devenv
+  # Regenerate `dependencies` by building `androidMitmRecord` (same `devenv
   # build`/nixbuild.net pipeline as everything else — it's a real FOD, so it
-  # gets network regardless of sandboxing) and merging its `$out/deps.json`
-  # into `dependencies`, whenever this app's Gradle-side dependencies change
-  # (AGP/Kotlin/AndroidX version bumps, mostly).
+  # gets network regardless of sandboxing) and replacing `dependencies` with
+  # its `$out/deps.json` wholesale (one recording covers the complete
+  # debug+release graph for the selected ABIs, so anything it didn't touch
+  # is stale by definition — merging would only accumulate dead entries),
+  # whenever this app's Gradle-side dependencies change (AGP/Kotlin/
+  # AndroidX version bumps, mostly) or its `android.targets` selection does.
   androidDepsData = lib.importJSON androidDepsFile;
 
   androidMitmCache = mitm-cache.fetch {
