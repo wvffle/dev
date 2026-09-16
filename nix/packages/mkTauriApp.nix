@@ -120,6 +120,17 @@
   # been observed to reach for up front is what avoids it ever trying.
   androidBuildToolsVersions = android.buildToolsVersions or ["35.0.0" "36.0.0"];
   androidNdkVersion = android.ndkVersion or "29.0.14206865";
+  # Which of the 4 Android ABIs to actually compile Rust for and package
+  # into the APK (tauri CLI short names, matching its own `--target`
+  # values). Defaults to all 4 — upstream tauri's behavior — but a real
+  # device fleet is usually one ABI (arm64) plus maybe x86_64 for the
+  # emulator; every extra entry here costs a full per-ABI Rust compile in
+  # both `buildDepsOnly` and the app build, so narrowing this is the
+  # single biggest build-time lever this file has. `androidMitmRecord`
+  # deliberately ignores this (see its own comment): it always records the
+  # all-4-ABI universal build, so the recorded Gradle-dependency lockfile
+  # (and its pinned hash) stay valid however this knob is set.
+  androidTargetNames = android.targets or ["aarch64" "armv7" "i686" "x86_64"];
 
   isNonEmptyVersion = v: v != null && v != "" && v != true;
 
@@ -227,6 +238,27 @@
       clangPrefix = "x86_64-linux-android";
     }
   ];
+  # The tauri CLI's own short target names are the leading component of
+  # each triple ("aarch64-linux-android" -> "aarch64"), which is also what
+  # `androidTargetNames` entries are validated against here — an assert,
+  # not silent filtering, so a typo ("arm64") fails loudly instead of
+  # quietly building zero ABIs.
+  androidTargetShortName = t: lib.head (lib.splitString "-" t.triple);
+  androidSelectedTargets =
+    assert lib.assertMsg
+    (androidTargetNames != []
+      && lib.all (n: lib.any (t: androidTargetShortName t == n) androidRustTargets) androidTargetNames)
+    "mkTauriApp: android.targets must be a non-empty subset of ${builtins.toJSON (map androidTargetShortName androidRustTargets)}, got ${builtins.toJSON androidTargetNames}";
+      lib.filter (t: lib.elem (androidTargetShortName t) androidTargetNames) androidRustTargets;
+  androidSelectsAllTargets = lib.length androidSelectedTargets == lib.length androidRustTargets;
+
+  # `androidCargoEnv` and the fenix toolchain below deliberately stay
+  # scoped to the FULL target list, not `androidSelectedTargets`:
+  # `androidMitmRecord` always builds the all-4-ABI universal variant (see
+  # its own comment), so it needs every triple's linker env and rust-std
+  # regardless of what the real app build narrows itself down to — and
+  # keeping them selection-independent also keeps the deps derivation's
+  # env (and thus crane's cache) stable when the selection changes.
   androidCargoEnv = lib.listToAttrs (lib.concatMap (t: let
     clang = "${androidNdkBin}/${t.clangPrefix}${toString androidMinSdk}-clang";
     clangxx = "${androidNdkBin}/${t.clangPrefix}${toString androidMinSdk}-clang++";
@@ -235,6 +267,24 @@
     {
       name = "CARGO_TARGET_${t.envTarget}_LINKER";
       value = clang;
+    }
+    {
+      # Byte-identical to what tauri-cli's own `configure_cargo` injects
+      # into every android cargo invocation (tauri-cli 2.11.4's
+      # android/mod.rs sets `CARGO_TARGET_<T>_RUSTFLAGS` to cargo-mobile2
+      # 0.22.4's `generate_cargo_config` rustflags, space-joined). Cargo
+      # hashes a unit's rustflags into its `.fingerprint`/`target` unit
+      # directory name, so a deps derivation built WITHOUT these produces
+      # artifacts the real app build cannot see at all — confirmed via
+      # `CARGO_LOG=cargo::core::compiler::fingerprint=info` on a real
+      # build: 1164 units "failed to read" their fingerprint under a
+      # different unit hash and recompiled, despite freshly inherited
+      # cargoArtifacts. Set here (derivation env, both the deps and app
+      # derivations) rather than only in the deps build command: the
+      # app-side tauri CLI overwrites it with this exact same value, and
+      # `androidMitmRecord`'s builds stay consistent too.
+      name = "CARGO_TARGET_${t.envTarget}_RUSTFLAGS";
+      value = "-Clink-arg=-landroid -Clink-arg=-llog -Clink-arg=-lOpenSLES";
     }
     {
       name = "CC_${triple_}";
@@ -648,6 +698,19 @@
       # copy.
       cp -rL "$vendor_dir" "$writable_vendor_dir"
       chmod -R u+w "$writable_vendor_dir"
+      # The copy gets fresh (build-time) mtimes, and cargo's dep-info
+      # staleness check compares source mtimes against the artifacts' —
+      # which, when inherited from the deps derivation's target.tar.zst,
+      # carry that EARLIER build's wall-clock times. A freshly-copied
+      # vendor tree therefore looks newer than every inherited artifact
+      # and dirties the whole graph, host units included (observed as
+      # `dirty: FsStatusOutdated` / `stale: changed <vendored build.rs>`
+      # under CARGO_LOG fingerprint logging). Pinning the copy to epoch 1
+      # — the same timestamp every real /nix/store vendor dir has, which
+      # is exactly why the linux/windows targets (which use the store
+      # vendor dir directly) never had this problem — makes the sources
+      # permanently older than any artifact, restoring reuse.
+      find "$writable_vendor_dir" -exec touch -h -d '@1' {} +
       sed -i "s|directory = \"$vendor_dir\"|directory = \"$writable_vendor_dir\"|" "$CARGO_HOME/config.toml"
     fi
   '';
@@ -743,6 +806,15 @@ GRADLEW_EOF
   androidBuildCmd =
     "cargo tauri android build --apk"
     + lib.optionalString (!release) " --debug"
+    # No `--target` flags when everything is selected — that's exactly the
+    # CLI's own default, and keeping the command byte-identical for the
+    # default case keeps existing callers' derivations unchanged. With a
+    # narrowed selection the CLI passes gradle `-PabiList=...`/
+    # `-PtargetList=...` itself (see `gen/android`'s RustPlugin, which
+    # reads exactly those properties), so this still produces ONE
+    # universal-flavor APK containing just the selected ABIs.
+    + lib.optionalString (!androidSelectsAllTargets)
+    (lib.concatMapStrings (t: " --target ${androidTargetShortName t}") androidSelectedTargets)
     + " --config '${tauriConfigPatch}'";
 
   # `androidMitmRecord`'s own build command — deliberately independent of
@@ -975,9 +1047,28 @@ GRADLEW_EOF
   # with `incremental = false` by default, and build-script/`OUT_DIR`
   # caching is identical either way) — so a `check` pass here would just
   # be duplicate front-end work with nothing to show for it.
+  # The per-target `export`s replicate, byte for byte, the env cargo-mobile2's
+  # own `compile_lib` (the thing actually invoking cargo inside `cargo tauri
+  # android build`/`android-studio-script` — confirmed against
+  # cargo-mobile2 0.22.4's src/android/target.rs + ndk.rs, the version
+  # tauri-cli 2.11.4 locks) sets on every real app-build cargo invocation:
+  # `ANDROID_NATIVE_API_LEVEL=<minSdk>`, `TARGET_AR=<ndk>/llvm-ar`, and
+  # `TARGET_CC`/`TARGET_CXX` as `<clang_triple><minApi>-clang(++)`.
+  # Fingerprint-parity insurance: a `cc`-using build script that emits
+  # `cargo:rerun-if-env-changed=TARGET_CC` (the `cc` crate does this for
+  # the compiler vars it consults) would see these flip from unset here to
+  # set in the app derivation and re-run there, recompiling its crate and
+  # every dependent. The values are exactly what `androidCargoEnv` already
+  # computes as `CC_<triple>`/`CXX_<triple>`/`AR_<triple>` (which `cc`
+  # prefers anyway), just under the spellings cargo-mobile2 uses — so this
+  # changes no compile, only the recorded env.
   androidBuildDepsOnlyCmd = lib.concatMapStringsSep "\n" (t: ''
+    export ANDROID_NATIVE_API_LEVEL=${toString androidMinSdk}
+    export TARGET_AR=${androidNdkBin}/llvm-ar
+    export TARGET_CC=${androidNdkBin}/${t.clangPrefix}${toString androidMinSdk}-clang
+    export TARGET_CXX=${androidNdkBin}/${t.clangPrefix}${toString androidMinSdk}-clang++
     cargo build --target ${t.triple} ${lib.optionalString release "--release"} ${commonArgs.cargoExtraArgs}
-  '') androidRustTargets;
+  '') androidSelectedTargets;
 
   cargoArtifacts =
     attrs.cargoArtifacts or (
