@@ -42,6 +42,37 @@
   # replacing) this builder's own defaults below.
   extraNativeBuildInputs ? [],
   extraEnv ? {},
+  # ESP-IDF "managed" components (ones normally fetched at configure time
+  # by the IDF Component Manager from https://components.espressif.com,
+  # declared in the crate's own `Cargo.toml` via
+  # `[[package.metadata.esp-idf-sys.extra_components]]` +
+  # `remote_component = { name, version }`) DON'T WORK under this builder:
+  # the component manager needs a writable `$HOME` (handled below) *and*
+  # network access to actually download anything, and a Nix derivation
+  # build is fully network-isolated — confirmed empirically, fails with
+  # "ERROR: Cannot establish a connection to the component registry."
+  #
+  # This is the hermetic replacement: pass each one here as
+  # `{ name, src }`, where `src` is the component's source fetched by Nix
+  # itself (e.g. `pkgs.fetchzip` pointed at the registry's own versioned
+  # download URL, `https://components-file.espressif.com/components/<ns>/<name>/<version>/...zip`
+  # — found via `https://components.espressif.com/api/components/<ns>/<name>`).
+  # Each one is copied into the crate at `.nix-managed-components/<name>`
+  # (see `preBuild` below) — the *consuming* crate's own `Cargo.toml` must
+  # reference that exact path via a plain (non-`remote_component`)
+  # `component_dirs = [".nix-managed-components/<name>"]` entry instead of
+  # `remote_component`. `<name>` must match the CMake component name a
+  # `remote_component` entry would have produced (slashes in
+  # "<namespace>/<component>" become "__"), not the plain registry name —
+  # some esp-idf-svc modules gate on a `cfg` hardcoded to that namespaced
+  # form regardless of how the component was actually sourced. And since
+  # that directory only exists inside this sandboxed build, never in a
+  # real checkout, the consuming crate needs its own way to populate the
+  # same path for local (non-Nix) `cargo build` iteration — a plain
+  # `curl`+`unzip` block in its own README, gitignoring the directory
+  # itself, is the established pattern (no script file — this repo/its
+  # consumers avoid standalone `.sh`/`.py` glue for one-off dev tooling).
+  extraManagedComponents ? [],
 }:
   assert lib.assertOneOf "type" type ["std" "nostd"]; let
     fullSrc = fullCleanSource src {};
@@ -98,6 +129,31 @@
     sourceRoot = "${fullSrc.name}/${cargoRoot}";
     strictDeps = true;
     doCheck = false; # cross-compiled for Xtensa; can't run the crate's own tests on the build host
+    # A writable $HOME: several ESP-IDF build-time tools (the component
+    # manager among them) want to write caches/config under it, which
+    # fails outright in a sandboxed Nix build with no real $HOME — same
+    # class of fix mkTauriApp.nix's android build already applies for
+    # gradle/cargo. Also stages `extraManagedComponents` (see its own doc
+    # comment above) at the exact relative path the crate's own
+    # `component_dirs` entry expects — in `preBuild`, not `postPatch`:
+    # unconfirmed whether crane's `buildPackage` threads an ordinary
+    # `postPatch` through to its generated derivation the same way plain
+    # `stdenv.mkDerivation` does, but `preBuild` is confirmed to run (this
+    # same derivation's $HOME fix above only works because it does). Runs
+    # in `sourceRoot` (== the crate root, via `sourceRoot` above). `cp -r`
+    # off a Nix store path leaves everything read-only; `chmod -R u+w`
+    # matches mkTauriApp.nix's own `androidVendorWritableFix` reasoning
+    # for why a plain store path can't be used in place.
+    preBuild =
+      ''
+        export HOME=$(mktemp -d)
+      ''
+      + lib.concatMapStrings (c: ''
+        mkdir -p .nix-managed-components
+        cp -r ${c.src} .nix-managed-components/${c.name}
+        chmod -R u+w .nix-managed-components/${c.name}
+      '')
+      extraManagedComponents;
     # crane defaults CARGO_PROFILE to "release" already.
     #
     # `cargoArtifacts = null` forces a single-phase build (no separate
