@@ -1197,6 +1197,20 @@ in
   # argument — see that file's own comment on why) needs — the exact same
   # reasoning `mkTauriFrontend.nix`'s own `frontendSrc` comment gives for
   # the same mistake.
+  //
+  # Exposes the already-built pre-bundle frontend (the exact
+  # `mkTauriFrontend` derivation this app's own Tauri bundling step
+  # consumes via `frontendDist` above — not a second, separately-built
+  # equivalent) as `<app>.frontend`, for callers that need to
+  # post-process or re-upload artifacts from precisely what shipped
+  # (e.g. uploading JS sourcemaps to an error tracker after the build,
+  # which needs the exact bytes that ended up in the bundle, not a
+  # fresh rebuild that merely shares the same inputs). Unconditional
+  # (not `isAndroid`-gated like the block below) since every target
+  # builds a `frontend`.
+  {
+    inherit frontend;
+  }
   // lib.optionalAttrs isAndroid {
     inherit androidMitmCache androidMitmRecord androidDepsFile;
   }
